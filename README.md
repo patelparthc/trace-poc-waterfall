@@ -2,9 +2,18 @@
 
 A comprehensive proof-of-concept dashboard for visualizing OpenTelemetry traces from agentic AI systems. Built with React 19, this dashboard provides enterprise-grade observability for multi-agent workflows, LLM interactions, and complex AI system operations.
 
+## 🚀 Live Demo
+
+**[Try the Interactive Demo →](https://patelparthc.github.io/trace-poc-waterfall/)**
+
+Experience the full dashboard with 1200+ realistic trace samples, interactive waterfall visualization, and comprehensive agent workflow analysis.
+
+---
+
 ![Dashboard Preview](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
 ![React Version](https://img.shields.io/badge/React-19.0-blue)
 ![Build](https://img.shields.io/badge/Build-Vite-purple)
+![Demo](https://img.shields.io/badge/Demo-Live-success)
 
 ## Features
 
@@ -41,15 +50,22 @@ A comprehensive proof-of-concept dashboard for visualizing OpenTelemetry traces 
 
 ## Quick Start
 
-### Prerequisites
+### Option 1: Try the Live Demo
+**[🌐 Launch Interactive Demo](https://patelparthc.github.io/trace-poc-waterfall/)**
+
+No installation required! The live demo includes all features with pre-generated trace data.
+
+### Option 2: Run Locally
+
+#### Prerequisites
 - Node.js 18+
 - npm or yarn
 
-### Installation
+#### Installation
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd agentic-otel-dashboard
+git clone https://github.com/patelparthc/trace-poc-waterfall.git
+cd trace-poc-waterfall
 
 # Install dependencies
 npm install
@@ -59,6 +75,11 @@ npm run dev
 ```
 
 ### Usage
+
+#### Live Demo
+Visit **[https://patelparthc.github.io/trace-poc-waterfall/](https://patelparthc.github.io/trace-poc-waterfall/)** to explore the dashboard instantly.
+
+#### Local Development
 1. Open your browser to `http://localhost:3000`
 2. The dashboard will automatically generate 1200+ sample trace records
 3. Navigate between tabs to explore different views

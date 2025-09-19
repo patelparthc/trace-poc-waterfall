@@ -1,11 +1,27 @@
 #!/bin/bash
 
 # OpenTelemetry Dashboard - Git Repository Setup Script
-# Creates a new branch and pushes to a public GitHub repository
+# Creates a new branch, creates GitHub repo, and pushes as public repository
 
 set -e  # Exit on any error
 
 echo "🚀 Setting up Git repository for OpenTelemetry Dashboard..."
+
+# Check if GitHub CLI is installed
+if ! command -v gh &> /dev/null; then
+    echo "❌ GitHub CLI (gh) is not installed"
+    echo "Please install it first:"
+    echo "  brew install gh"
+    echo "  or visit: https://cli.github.com/"
+    exit 1
+fi
+
+# Check if user is authenticated with GitHub CLI
+if ! gh auth status &> /dev/null; then
+    echo "🔐 Please authenticate with GitHub CLI first:"
+    echo "gh auth login"
+    exit 1
+fi
 
 # Check if we're already in a git repository
 if [ -d ".git" ]; then
@@ -17,20 +33,29 @@ else
     echo "✅ Git repository initialized"
 fi
 
-# Set up remote repository (you'll need to create this on GitHub first)
+# Repository configuration
 REPO_NAME="trace-poc-waterfall"
-GITHUB_USERNAME="p1nt0z"  # Change this to your GitHub username
-REPO_URL="https://github.com/${GITHUB_USERNAME}/${REPO_NAME}.git"
+REPO_DESCRIPTION="OpenTelemetry Dashboard for Agentic AI Systems - Modern React 19 + Vite dashboard with waterfall visualization"
 
-echo "🔗 Setting up remote repository..."
+echo "🔗 Setting up GitHub repository..."
+
+# Check if repository already exists on GitHub
+if gh repo view "$REPO_NAME" &> /dev/null; then
+    echo "📡 Repository '$REPO_NAME' already exists on GitHub"
+    REPO_URL=$(gh repo view "$REPO_NAME" --json url -q '.url').git
+else
+    echo "🆕 Creating new public repository on GitHub..."
+    gh repo create "$REPO_NAME" --public --description "$REPO_DESCRIPTION" --clone=false
+    echo "✅ Repository '$REPO_NAME' created on GitHub"
+    REPO_URL="https://github.com/$(gh api user --jq .login)/${REPO_NAME}.git"
+fi
 
 # Check if remote already exists
 if git remote get-url origin 2>/dev/null; then
     echo "📡 Remote 'origin' already exists:"
     git remote -v
-    read -p "Do you want to update the remote URL? (y/n): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    CURRENT_URL=$(git remote get-url origin)
+    if [ "$CURRENT_URL" != "$REPO_URL" ]; then
         git remote set-url origin "$REPO_URL"
         echo "✅ Remote URL updated to: $REPO_URL"
     fi
@@ -129,31 +154,22 @@ fi
 
 # Push to remote repository
 echo "🚀 Pushing to remote repository..."
-echo "⚠️  Make sure you've created the repository '$REPO_NAME' on GitHub first!"
-echo "   Repository URL: https://github.com/${GITHUB_USERNAME}/${REPO_NAME}"
-echo ""
-read -p "Press Enter to continue with push, or Ctrl+C to cancel..."
 
 # Push with upstream tracking
 if git push -u origin $BRANCH_NAME; then
     echo "✅ Successfully pushed to remote repository!"
     echo ""
     echo "🎉 Repository setup complete!"
-    echo "📍 Repository URL: https://github.com/${GITHUB_USERNAME}/${REPO_NAME}"
+    echo "📍 Repository URL: $REPO_URL"
     echo "🌿 Branch: $BRANCH_NAME"
+    echo "🔍 View on GitHub: https://github.com/$(gh api user --jq .login)/${REPO_NAME}"
     echo ""
     echo "Next steps:"
-    echo "1. Visit your repository on GitHub"
-    echo "2. Make sure it's set to public in repository settings"
-    echo "3. Add a detailed README if needed"
+    echo "1. Visit your repository on GitHub to verify it's public"
+    echo "2. The repository is automatically configured as public"
+    echo "3. GitHub Copilot instructions are in .github/copilot-instructions.md"
     echo "4. Consider adding topics/tags for discoverability"
 else
     echo "❌ Failed to push to remote repository"
-    echo "Please make sure:"
-    echo "1. The repository '$REPO_NAME' exists on GitHub"
-    echo "2. You have the correct permissions"
-    echo "3. Your Git credentials are configured"
-    echo ""
-    echo "You can create the repository at:"
-    echo "https://github.com/new"
+    echo "Please check your Git credentials and network connection"
 fi

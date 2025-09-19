@@ -158,17 +158,36 @@ echo "🚀 Pushing to remote repository..."
 # Push with upstream tracking
 if git push -u origin $BRANCH_NAME; then
     echo "✅ Successfully pushed to remote repository!"
+    
+    # Enable GitHub Pages
+    echo "🌐 Enabling GitHub Pages..."
+    if gh api repos/$(gh api user --jq .login)/${REPO_NAME}/pages \
+        --method POST \
+        --field source.branch="main" \
+        --field source.path="/" \
+        --field build_type="workflow" &> /dev/null; then
+        echo "✅ GitHub Pages enabled with GitHub Actions"
+    else
+        echo "ℹ️  GitHub Pages may already be enabled or will be enabled after first workflow run"
+    fi
+    
     echo ""
     echo "🎉 Repository setup complete!"
     echo "📍 Repository URL: $REPO_URL"
     echo "🌿 Branch: $BRANCH_NAME"
     echo "🔍 View on GitHub: https://github.com/$(gh api user --jq .login)/${REPO_NAME}"
+    echo "🌐 Live Demo (available after GitHub Actions deployment): https://$(gh api user --jq .login).github.io/${REPO_NAME}/"
     echo ""
-    echo "Next steps:"
-    echo "1. Visit your repository on GitHub to verify it's public"
-    echo "2. The repository is automatically configured as public"
-    echo "3. GitHub Copilot instructions are in .github/copilot-instructions.md"
-    echo "4. Consider adding topics/tags for discoverability"
+    echo "🚀 What happens next:"
+    echo "1. GitHub Actions will automatically build and deploy your site"
+    echo "2. Your demo will be available at the Live Demo URL in a few minutes"
+    echo "3. Every push to main will trigger automatic redeployment"
+    echo "4. The repository is configured as public with GitHub Pages enabled"
+    echo ""
+    echo "⚡ Local development:"
+    echo "- Run 'npm run dev' to start development server"
+    echo "- Run 'npm run build' to build for production"
+    echo "- Run 'npm run preview' to preview production build locally"
 else
     echo "❌ Failed to push to remote repository"
     echo "Please check your Git credentials and network connection"

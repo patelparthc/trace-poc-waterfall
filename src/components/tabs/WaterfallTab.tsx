@@ -137,7 +137,8 @@ const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
                                 bottom: hasChildren && isExpanded ? '15px' : '50%',
                                 width: '1px',
                                 backgroundColor: 'var(--border-primary)',
-                                opacity: 0.6
+                                opacity: 0.6,
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                             }} />
                             {/* Horizontal line to span */}
                             <div style={{
@@ -147,7 +148,8 @@ const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
                                 width: '12px',
                                 height: '1px',
                                 backgroundColor: 'var(--border-primary)',
-                                opacity: 0.6
+                                opacity: 0.6,
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                             }} />
                         </>
                     )}
@@ -156,7 +158,7 @@ const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
                     {hasChildren && (
                         <div style={{
                             position: 'absolute',
-                            left: `${indentSize - 18}px`,
+                            left: `${indentSize - 19}px`,
                             top: '50%',
                             transform: 'translateY(-50%)',
                             zIndex: 1
@@ -169,18 +171,21 @@ const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
                                 style={{
                                     background: 'var(--bg-primary)',
                                     border: '1px solid var(--border-primary)',
-                                    borderRadius: '3px',
+                                    borderRadius: '2px',
                                     cursor: 'pointer',
                                     padding: '0',
-                                    fontSize: '10px',
+                                    fontSize: '12px',
+                                    fontWeight: '600',
                                     color: 'var(--text-secondary)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    width: '16px',
-                                    height: '16px',
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                    width: '18px',
+                                    height: '18px',
+                                    minWidth: '18px',
+                                    minHeight: '18px',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
                                     outline: 'none'  // Remove focus outline
                                 }}
                                 onMouseEnter={(e) => {
@@ -319,20 +324,41 @@ const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
                 </div>
             </button>
 
-            {/* Render children if expanded */}
-            {hasChildren && isExpanded && children.map(childNode => (
-                <SpanTreeNode
-                    key={childNode.span.spanId}
-                    node={childNode}
-                    isExpanded={expandedSpans.has(childNode.span.spanId)}
-                    expandedSpans={expandedSpans}
-                    onToggleExpand={onToggleExpand}
-                    onSelectSpan={onSelectSpan}
-                    selectedSpan={selectedSpan}
-                    timelineBounds={timelineBounds}
-                    totalDuration={totalDuration}
-                />
-            ))}
+            {/* Render children with smooth animation */}
+            {hasChildren && (
+                <div
+                    style={{
+                        maxHeight: isExpanded ? '2000px' : '0px',
+                        overflow: 'hidden',
+                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                        opacity: isExpanded ? 1 : 0,
+                        transform: isExpanded ? 'translateY(0)' : 'translateY(-10px)'
+                    }}
+                >
+                    {children.map((childNode, index) => (
+                        <div
+                            key={childNode.span.spanId}
+                            style={{
+                                opacity: isExpanded ? 1 : 0,
+                                transform: isExpanded ? 'translateX(0)' : 'translateX(-20px)',
+                                transition: `all 0.3s cubic-bezier(0.4, 0, 0.2, 1)`,
+                                transitionDelay: isExpanded ? `${index * 0.05}s` : '0s'
+                            }}
+                        >
+                            <SpanTreeNode
+                                node={childNode}
+                                isExpanded={expandedSpans.has(childNode.span.spanId)}
+                                expandedSpans={expandedSpans}
+                                onToggleExpand={onToggleExpand}
+                                onSelectSpan={onSelectSpan}
+                                selectedSpan={selectedSpan}
+                                timelineBounds={timelineBounds}
+                                totalDuration={totalDuration}
+                            />
+                        </div>
+                    ))}
+                </div>
+            )}
         </>
     );
 };

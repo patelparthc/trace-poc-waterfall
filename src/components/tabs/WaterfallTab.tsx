@@ -49,25 +49,38 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
     const totalDuration = max - min;
 
     return (
-        <div style={{ padding: '32px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Header */}
             <div style={{
                 marginBottom: '24px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                flexShrink: 0
+                flexShrink: 0,
+                flexWrap: 'wrap',
+                gap: '1rem'
             }}>
                 <h2 style={{
                     margin: 0,
-                    fontSize: '24px',
+                    fontSize: 'clamp(1.25rem, 3vw, 1.5rem)',
                     fontWeight: '600',
-                    color: '#1f2937'
+                    color: 'var(--text-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
                 }}>
+                    <span className="icon icon-waterfall" />
                     Waterfall Timeline
                 </h2>
-                <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                    {traces.length} traces • Click spans for details
+                <div style={{
+                    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+                    color: 'var(--text-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                }}>
+                    <span className="icon icon-sessions" />
+                    Sessions ({traces.length} of {data.sessions.length}) • Click spans for details
                 </div>
             </div>
 
@@ -75,25 +88,26 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
             <div style={{
                 display: 'grid',
                 gridTemplateColumns: selectedSpan
-                    ? '280px 1fr 350px'  // Left sidebar, center waterfall, right panel
-                    : '280px 1fr',       // Left sidebar, full center waterfall
-                gap: '24px',
+                    ? 'minmax(250px, 280px) 1fr minmax(300px, 350px)'  // Left sidebar, center waterfall, right panel
+                    : 'minmax(250px, 280px) 1fr',       // Left sidebar, full center waterfall
+                gap: 'clamp(0.75rem, 3vw, 1.5rem)',
                 flex: 1,
                 minHeight: 0  // Allow flex items to shrink below content size
             }}>
                 {/* Left Panel - Trace Selector */}
                 <div style={{
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--bg-primary)',
                     borderRadius: '8px',
-                    border: '1px solid #e5e7eb',
-                    padding: '16px',
-                    overflowY: 'auto'
+                    border: '1px solid var(--border-primary)',
+                    padding: 'clamp(0.75rem, 2vw, 1rem)',
+                    overflowY: 'auto',
+                    transition: 'all 0.3s ease'
                 }}>
                     <h3 style={{
                         margin: '0 0 16px 0',
-                        fontSize: '16px',
+                        fontSize: 'clamp(0.875rem, 2vw, 1rem)',
                         fontWeight: '600',
-                        color: '#1f2937'
+                        color: 'var(--text-primary)'
                     }}>
                         Select Trace
                     </h3>
@@ -106,30 +120,42 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                     setSelectedSpan(null); // Clear span selection when changing trace
                                 }}
                                 style={{
-                                    padding: '12px',
-                                    backgroundColor: selectedTraceId === trace.traceId ? '#eff6ff' : '#ffffff',
-                                    border: selectedTraceId === trace.traceId ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                                    padding: 'clamp(0.5rem, 2vw, 0.75rem)',
+                                    backgroundColor: selectedTraceId === trace.traceId ? 'var(--accent-primary)' : 'var(--bg-primary)',
+                                    border: selectedTraceId === trace.traceId ? '2px solid var(--accent-primary)' : '1px solid var(--border-primary)',
                                     borderRadius: '6px',
                                     cursor: 'pointer',
                                     textAlign: 'left',
                                     transition: 'all 0.2s',
-                                    fontSize: '12px'
+                                    fontSize: 'clamp(0.625rem, 1.5vw, 0.75rem)',
+                                    color: selectedTraceId === trace.traceId ? 'white' : 'var(--text-primary)'
                                 }}
                                 onMouseEnter={(e) => {
                                     if (selectedTraceId !== trace.traceId) {
-                                        e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                        e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                                        e.currentTarget.style.borderColor = 'var(--accent-primary)';
                                     }
                                 }}
                                 onMouseLeave={(e) => {
                                     if (selectedTraceId !== trace.traceId) {
-                                        e.currentTarget.style.backgroundColor = '#ffffff';
+                                        e.currentTarget.style.backgroundColor = 'var(--bg-primary)';
+                                        e.currentTarget.style.borderColor = 'var(--border-primary)';
                                     }
                                 }}
                             >
-                                <div style={{ fontWeight: '500', color: '#1f2937', marginBottom: '4px' }}>
+                                <div style={{
+                                    fontWeight: '500',
+                                    color: selectedTraceId === trace.traceId ? 'white' : 'var(--text-primary)',
+                                    marginBottom: '4px'
+                                }}>
                                     {trace.sessionId}
                                 </div>
-                                <div style={{ color: '#6b7280', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{
+                                    color: selectedTraceId === trace.traceId ? 'rgba(255, 255, 255, 0.8)' : 'var(--text-secondary)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}>
                                     <span>{formatDuration(trace.duration)}</span>
                                     <span>•</span>
                                     <Badge variant={trace.success ? 'success' : 'error'}>
@@ -143,46 +169,62 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
 
                 {/* Center Panel - Waterfall Visualization */}
                 <div style={{
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--bg-primary)',
                     borderRadius: '8px',
-                    border: '1px solid #e5e7eb',
-                    padding: '20px',
-                    overflowY: 'auto'
+                    border: '1px solid var(--border-primary)',
+                    padding: 'clamp(1rem, 3vw, 1.25rem)',
+                    overflowY: 'auto',
+                    transition: 'all 0.3s ease'
                 }}>
                     {selectedTrace && selectedSpans.length > 0 ? (
                         <>
                             {/* Trace Info */}
                             <div style={{
                                 marginBottom: '20px',
-                                padding: '16px',
-                                backgroundColor: '#f9fafb',
+                                padding: 'clamp(0.75rem, 2vw, 1rem)',
+                                backgroundColor: 'var(--bg-secondary)',
                                 borderRadius: '6px',
-                                border: '1px solid #e5e7eb'
+                                border: '1px solid var(--border-primary)',
+                                transition: 'all 0.3s ease'
                             }}>
                                 <div style={{
                                     display: 'flex',
                                     justifyContent: 'space-between',
-                                    alignItems: 'center'
+                                    alignItems: 'center',
+                                    flexWrap: 'wrap',
+                                    gap: '0.5rem'
                                 }}>
                                     <div>
                                         <h3 style={{
                                             margin: 0,
-                                            fontSize: '16px',
+                                            fontSize: 'clamp(0.875rem, 2vw, 1rem)',
                                             fontWeight: '600',
-                                            color: '#1f2937'
+                                            color: 'var(--text-primary)'
                                         }}>
                                             {selectedTrace.sessionId}
                                         </h3>
                                         <div style={{
-                                            fontSize: '12px',
-                                            color: '#6b7280',
+                                            fontSize: 'clamp(0.625rem, 1.5vw, 0.75rem)',
+                                            color: 'var(--text-secondary)',
                                             marginTop: '4px'
                                         }}>
                                             {selectedTrace.userId} • {selectedTrace.sessionType} • {formatDuration(selectedTrace.duration)}
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        flexWrap: 'wrap'
+                                    }}>
+                                        <span style={{
+                                            fontSize: 'clamp(0.625rem, 1.5vw, 0.75rem)',
+                                            color: 'var(--text-secondary)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.25rem'
+                                        }}>
+                                            <span className="icon icon-spans" />
                                             {selectedSpans.length} spans
                                         </span>
                                         <Badge variant={selectedTrace.success ? 'success' : 'error'}>
@@ -206,21 +248,22 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                             style={{
                                                 width: '100%',
                                                 display: 'grid',
-                                                gridTemplateColumns: '200px 1fr 100px',
+                                                gridTemplateColumns: 'minmax(150px, 200px) 1fr minmax(80px, 100px)',
                                                 alignItems: 'center',
-                                                gap: '12px',
-                                                padding: '10px',
-                                                borderRadius: '4px',
-                                                border: selectedSpan?.spanId === span.spanId ? '2px solid #3b82f6' : '1px solid transparent',
-                                                backgroundColor: selectedSpan?.spanId === span.spanId ? '#eff6ff' : 'transparent',
+                                                gap: 'clamp(0.5rem, 2vw, 0.75rem)',
+                                                padding: 'clamp(0.5rem, 2vw, 0.625rem)',
+                                                borderRadius: '0', // Remove rounded corners
+                                                border: 'none',
+                                                borderBottom: selectedSpan?.spanId === span.spanId ? '3px solid var(--accent-primary)' : '1px solid var(--border-primary)',
+                                                backgroundColor: selectedSpan?.spanId === span.spanId ? 'var(--bg-secondary)' : 'transparent',
                                                 cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                                borderBottom: index < selectedSpans.length - 1 ? '1px solid #f3f4f6' : 'none',
-                                                textAlign: 'left'
+                                                transition: 'all 0.3s ease',
+                                                textAlign: 'left',
+                                                color: 'var(--text-primary)'
                                             }}
                                             onMouseEnter={(e) => {
                                                 if (selectedSpan?.spanId !== span.spanId) {
-                                                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                                                    e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
                                                 }
                                             }}
                                             onMouseLeave={(e) => {
@@ -234,7 +277,7 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                                 <div style={{
                                                     fontSize: '13px',
                                                     fontWeight: '500',
-                                                    color: '#1f2937',
+                                                    color: 'var(--text-primary)',
                                                     marginBottom: '2px',
                                                     overflow: 'hidden',
                                                     textOverflow: 'ellipsis',
@@ -244,7 +287,7 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                                 </div>
                                                 <div style={{
                                                     fontSize: '11px',
-                                                    color: '#6b7280'
+                                                    color: 'var(--text-secondary)'
                                                 }}>
                                                     {span.agentType && `${span.agentType} agent`}
                                                 </div>
@@ -254,7 +297,7 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                             <div style={{
                                                 position: 'relative',
                                                 height: '24px',
-                                                backgroundColor: '#f3f4f6',
+                                                backgroundColor: 'var(--bg-secondary)',
                                                 borderRadius: '4px',
                                                 overflow: 'hidden'
                                             }}>
@@ -263,7 +306,7 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                                     left: `${leftPercent}%`,
                                                     width: `${widthPercent}%`,
                                                     height: '100%',
-                                                    backgroundColor: span.success ? '#10b981' : '#ef4444',
+                                                    backgroundColor: span.success ? 'var(--success)' : 'var(--error)',
                                                     borderRadius: '3px',
                                                     display: 'flex',
                                                     alignItems: 'center',
@@ -291,7 +334,7 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                             }}>
                                                 <span style={{
                                                     fontSize: '11px',
-                                                    color: '#6b7280',
+                                                    color: 'var(--text-secondary)',
                                                     fontFamily: 'monospace'
                                                 }}>
                                                     {formatDuration(span.duration)}
@@ -309,11 +352,11 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                             <div style={{
                                 marginTop: '16px',
                                 fontSize: '11px',
-                                color: '#6b7280',
+                                color: 'var(--text-secondary)',
                                 display: 'flex',
                                 justifyContent: 'space-between',
                                 alignItems: 'center',
-                                borderTop: '1px solid #e5e7eb',
+                                borderTop: '1px solid var(--border-primary)',
                                 paddingTop: '12px'
                             }}>
                                 <span>Start: {formatTime(new Date(min))}</span>
@@ -328,7 +371,7 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                             alignItems: 'center',
                             justifyContent: 'center',
                             height: '300px',
-                            color: '#6b7280',
+                            color: 'var(--text-secondary)',
                             textAlign: 'center'
                         }}>
                             <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏱️</div>
@@ -348,9 +391,9 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                 {/* Right Panel - Span Details */}
                 {selectedSpan && (
                     <div style={{
-                        backgroundColor: 'white',
+                        backgroundColor: 'var(--bg-primary)',
                         borderRadius: '8px',
-                        border: '1px solid #e5e7eb',
+                        border: '1px solid var(--border-primary)',
                         padding: '20px',
                         overflowY: 'auto'
                     }}>
@@ -360,7 +403,7 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                             alignItems: 'center',
                             marginBottom: '20px'
                         }}>
-                            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#1f2937' }}>
+                            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>
                                 Span Details
                             </h3>
                             <button
@@ -370,7 +413,7 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                     border: 'none',
                                     fontSize: '18px',
                                     cursor: 'pointer',
-                                    color: '#6b7280',
+                                    color: 'var(--text-secondary)',
                                     padding: '4px'
                                 }}
                             >
@@ -380,16 +423,16 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
 
                         <div style={{ display: 'grid', gap: '16px' }}>
                             <div>
-                                <label style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                     Operation Name
                                 </label>
-                                <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                                <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                     {selectedSpan.operationName}
                                 </div>
                             </div>
 
                             <div>
-                                <label style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                     Status
                                 </label>
                                 <div style={{ marginTop: '4px' }}>
@@ -400,38 +443,38 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                             </div>
 
                             <div>
-                                <label style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                     Duration
                                 </label>
-                                <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                                <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                     {formatDuration(selectedSpan.duration)}
                                 </div>
                             </div>
 
                             <div>
-                                <label style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                     Start Time
                                 </label>
-                                <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                                <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                     {new Date(selectedSpan.startTime).toLocaleString()}
                                 </div>
                             </div>
 
                             <div>
-                                <label style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                     End Time
                                 </label>
-                                <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                                <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                     {new Date(selectedSpan.endTime).toLocaleString()}
                                 </div>
                             </div>
 
                             {selectedSpan.agentType && (
                                 <div>
-                                    <label style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                    <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                         Agent Type
                                     </label>
-                                    <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                         {selectedSpan.agentType}
                                     </div>
                                 </div>
@@ -439,10 +482,10 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
 
                             {selectedSpan.model && (
                                 <div>
-                                    <label style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                    <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                         LLM Model
                                     </label>
-                                    <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                         {selectedSpan.model}
                                     </div>
                                 </div>
@@ -451,18 +494,18 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                             {selectedSpan.inputTokens && (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                     <div>
-                                        <label style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                             Input Tokens
                                         </label>
-                                        <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                                        <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                             {selectedSpan.inputTokens.toLocaleString()}
                                         </div>
                                     </div>
                                     <div>
-                                        <label style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                        <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                             Output Tokens
                                         </label>
-                                        <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                                        <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                             {(selectedSpan.outputTokens || 0).toLocaleString()}
                                         </div>
                                     </div>
@@ -470,13 +513,13 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                             )}
 
                             <div>
-                                <label style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                     Attributes
                                 </label>
                                 <div style={{
                                     marginTop: '8px',
                                     padding: '12px',
-                                    backgroundColor: '#f9fafb',
+                                    backgroundColor: 'var(--bg-secondary)',
                                     borderRadius: '6px',
                                     fontSize: '11px',
                                     fontFamily: 'monospace',
@@ -486,8 +529,8 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                     {Object.entries(selectedSpan.attributes || {})
                                         .map(([key, value]) => (
                                             <div key={key} style={{ marginBottom: '6px' }}>
-                                                <span style={{ color: '#6b7280' }}>{key}:</span>{' '}
-                                                <span style={{ color: '#1f2937' }}>{String(value)}</span>
+                                                <span style={{ color: 'var(--text-secondary)' }}>{key}:</span>{' '}
+                                                <span style={{ color: 'var(--text-primary)' }}>{String(value)}</span>
                                             </div>
                                         ))}
                                 </div>

@@ -39,28 +39,55 @@ export default function SessionsTab({ data, totalSessions, onNavigateToWaterfall
     });
 
     const sessionColumns: TableColumn<Session>[] = [
-        { key: 'sessionId', header: 'Session ID', sortable: true },
-        { key: 'userId', header: 'User', sortable: true },
-        { key: 'sessionType', header: 'Type', sortable: true },
+        {
+            key: 'sessionId',
+            header: 'Session',
+            sortable: true,
+            render: (session: Session) => (
+                <div style={{ fontSize: '12px', lineHeight: '1.2' }}>
+                    <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
+                        {session.sessionId.substring(0, 8)}...
+                    </div>
+                    <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        {session.userId} • {session.sessionType}
+                    </div>
+                </div>
+            )
+        },
         {
             key: 'startTime',
-            header: 'Start Time',
+            header: 'Started',
             sortable: true,
-            render: (session: Session) => new Date(session.startTime).toLocaleString()
+            render: (session: Session) => (
+                <div style={{ fontSize: '12px', lineHeight: '1.2' }}>
+                    <div style={{ color: 'var(--text-primary)' }}>
+                        {new Date(session.startTime).toLocaleDateString()}
+                    </div>
+                    <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                </div>
+            )
         },
         {
             key: 'duration',
             header: 'Duration',
             sortable: true,
-            render: (session: Session) => formatDuration(session.duration)
+            render: (session: Session) => (
+                <span style={{ fontSize: '12px', fontWeight: '500' }}>
+                    {formatDuration(session.duration)}
+                </span>
+            )
         },
-        { key: 'numTasks', header: 'Tasks', sortable: true },
-        { key: 'numAgents', header: 'Agents', sortable: true },
         {
-            key: 'totalTokens',
-            header: 'Tokens',
-            sortable: true,
-            render: (session: Session) => formatNumber(session.totalTokens)
+            key: 'stats',
+            header: 'Stats',
+            render: (session: Session) => (
+                <div style={{ fontSize: '11px', lineHeight: '1.2', color: 'var(--text-secondary)' }}>
+                    <div>{session.numTasks} tasks • {session.numAgents} agents</div>
+                    <div style={{ marginTop: '2px' }}>{formatNumber(session.totalTokens)} tokens</div>
+                </div>
+            )
         },
         {
             key: 'success',
@@ -74,32 +101,37 @@ export default function SessionsTab({ data, totalSessions, onNavigateToWaterfall
     ];
 
     return (
-        <div style={{ padding: '32px' }}>
+        <div style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem'
+        }}>
             <div style={{
-                marginBottom: '24px',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                flexShrink: 0
             }}>
                 <h2 style={{
                     margin: 0,
                     fontSize: '24px',
                     fontWeight: '600',
-                    color: '#1f2937'
+                    color: 'var(--text-primary)'
                 }}>
                     Sessions ({filteredSessions.length} of {totalSessions})
                 </h2>
             </div>
 
-            {/* Filters and Search */}
+            {/* Controls */}
             <div style={{
-                marginBottom: '24px',
                 display: 'flex',
                 gap: '16px',
                 alignItems: 'center',
-                flexWrap: 'wrap'
+                flexWrap: 'wrap',
+                flexShrink: 0
             }}>
-                {/* Search */}
+                {/* Search input */}
                 <input
                     type="text"
                     placeholder="Search sessions..."
@@ -107,13 +139,13 @@ export default function SessionsTab({ data, totalSessions, onNavigateToWaterfall
                     onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
                         padding: '8px 12px',
-                        border: '1px solid #d1d5db',
+                        border: '1px solid var(--border-secondary)',
                         borderRadius: '6px',
                         fontSize: '14px',
                         minWidth: '200px',
                         outline: 'none',
-                        backgroundColor: '#ffffff',
-                        color: '#1f2937'
+                        backgroundColor: 'var(--bg-primary)',
+                        color: 'var(--text-primary)'
                     }}
                 />
 
@@ -125,9 +157,9 @@ export default function SessionsTab({ data, totalSessions, onNavigateToWaterfall
                             onClick={() => setFilterStatus(status as any)}
                             style={{
                                 padding: '6px 12px',
-                                border: filterStatus === status ? '1px solid #3b82f6' : '1px solid #d1d5db',
-                                backgroundColor: filterStatus === status ? '#eff6ff' : 'white',
-                                color: filterStatus === status ? '#3b82f6' : '#374151',
+                                border: filterStatus === status ? '1px solid var(--accent-primary)' : '1px solid var(--border-secondary)',
+                                backgroundColor: filterStatus === status ? 'var(--accent-primary)' : 'var(--bg-primary)',
+                                color: filterStatus === status ? 'white' : 'var(--text-primary)',
                                 borderRadius: '6px',
                                 fontSize: '12px',
                                 cursor: 'pointer',
@@ -140,21 +172,28 @@ export default function SessionsTab({ data, totalSessions, onNavigateToWaterfall
                 </div>
 
                 {/* Stats */}
-                <div style={{ marginLeft: 'auto', fontSize: '14px', color: '#6b7280' }}>
+                <div style={{ marginLeft: 'auto', fontSize: '14px', color: 'var(--text-secondary)' }}>
                     Success Rate: {((filteredSessions.filter(s => s.success).length / filteredSessions.length) * 100).toFixed(1)}%
                 </div>
             </div>
 
-            <Table
-                data={filteredSessions}
-                columns={sessionColumns}
-                onRowClick={(session) => {
-                    console.log('Selected session:', session);
-                    if (onNavigateToWaterfall) {
-                        onNavigateToWaterfall(session.sessionId);
-                    }
-                }}
-            />
+            {/* Table Container */}
+            <div style={{
+                flex: 1,
+                overflow: 'hidden',
+                minHeight: 0
+            }}>
+                <Table
+                    data={filteredSessions}
+                    columns={sessionColumns}
+                    onRowClick={(session) => {
+                        console.log('Selected session:', session);
+                        if (onNavigateToWaterfall) {
+                            onNavigateToWaterfall(session.sessionId);
+                        }
+                    }}
+                />
+            </div>
         </div>
     );
 }

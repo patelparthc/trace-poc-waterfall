@@ -57,11 +57,11 @@ export default function TracesTab({ data }: TracesTabProps) {
             header: 'Errors',
             sortable: true,
             render: (trace) => trace.errorCount > 0 ? (
-                <span style={{ color: '#dc2626', fontWeight: '500' }}>
+                <span style={{ color: 'var(--error)', fontWeight: '500' }}>
                     {trace.errorCount}
                 </span>
             ) : (
-                <span style={{ color: '#16a34a' }}>0</span>
+                <span style={{ color: 'var(--success)' }}>0</span>
             )
         },
         {
@@ -76,18 +76,23 @@ export default function TracesTab({ data }: TracesTabProps) {
     ];
 
     return (
-        <div style={{ padding: '32px' }}>
+        <div style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem'
+        }}>
             <div style={{
-                marginBottom: '24px',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                flexShrink: 0
             }}>
                 <h2 style={{
                     margin: 0,
                     fontSize: '24px',
                     fontWeight: '600',
-                    color: '#1f2937'
+                    color: 'var(--text-primary)'
                 }}>
                     Traces ({traces.length})
                 </h2>
@@ -95,7 +100,7 @@ export default function TracesTab({ data }: TracesTabProps) {
                     display: 'flex',
                     gap: '16px',
                     fontSize: '14px',
-                    color: '#6b7280'
+                    color: 'var(--text-secondary)'
                 }}>
                     <span>Total Spans: {formatNumber(data.spans.length)}</span>
                     <span>•</span>
@@ -103,11 +108,18 @@ export default function TracesTab({ data }: TracesTabProps) {
                 </div>
             </div>
 
-            <Table
-                data={traces}
-                columns={traceColumns}
-                onRowClick={(trace) => console.log('Selected trace:', trace)}
-            />
+            {/* Table Container */}
+            <div style={{
+                flex: 1,
+                overflow: 'hidden',
+                minHeight: 0
+            }}>
+                <Table
+                    data={traces}
+                    columns={traceColumns}
+                    onRowClick={(trace) => console.log('Selected trace:', trace)}
+                />
+            </div>
         </div>
     );
 }

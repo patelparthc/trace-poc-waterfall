@@ -77,32 +77,38 @@ export default function SpansTab({
     ];
 
     return (
-        <div style={{ padding: '32px' }}>
+        <div style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem'
+        }}>
             <div style={{
-                marginBottom: '24px',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                flexShrink: 0
             }}>
                 <h2 style={{
                     margin: 0,
                     fontSize: '24px',
                     fontWeight: '600',
-                    color: '#1f2937'
+                    color: 'var(--text-primary)'
                 }}>
                     Spans ({filteredSpans.length} of {totalSpans})
                 </h2>
             </div>
 
             {/* Filters and Search */}
+            {/* Controls */}
             <div style={{
-                marginBottom: '24px',
                 display: 'flex',
                 gap: '16px',
                 alignItems: 'center',
-                flexWrap: 'wrap'
+                flexWrap: 'wrap',
+                flexShrink: 0
             }}>
-                {/* Search */}
+                {/* Search input */}
                 <input
                     type="text"
                     placeholder="Search spans..."
@@ -110,13 +116,13 @@ export default function SpansTab({
                     onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
                         padding: '8px 12px',
-                        border: '1px solid #d1d5db',
+                        border: '1px solid var(--border-secondary)',
                         borderRadius: '6px',
                         fontSize: '14px',
                         minWidth: '200px',
                         outline: 'none',
-                        backgroundColor: '#ffffff',
-                        color: '#1f2937'
+                        backgroundColor: 'var(--bg-primary)',
+                        color: 'var(--text-primary)'
                     }}
                 />
 
@@ -128,9 +134,9 @@ export default function SpansTab({
                             onClick={() => setFilterStatus(status as any)}
                             style={{
                                 padding: '6px 12px',
-                                border: filterStatus === status ? '1px solid #3b82f6' : '1px solid #d1d5db',
-                                backgroundColor: filterStatus === status ? '#eff6ff' : 'white',
-                                color: filterStatus === status ? '#3b82f6' : '#374151',
+                                border: filterStatus === status ? '1px solid var(--accent-primary)' : '1px solid var(--border-secondary)',
+                                backgroundColor: filterStatus === status ? 'var(--accent-primary)' : 'var(--bg-primary)',
+                                color: filterStatus === status ? 'white' : 'var(--text-primary)',
                                 borderRadius: '6px',
                                 fontSize: '12px',
                                 cursor: 'pointer',
@@ -147,10 +153,10 @@ export default function SpansTab({
                     value={filterAgent}
                     onChange={(e) => setFilterAgent(e.target.value)}
                     style={{
-                        padding: '6px 8px',
-                        border: '1px solid #d1d5db',
+                        padding: '8px 12px',
+                        border: '1px solid var(--border-secondary)',
                         borderRadius: '6px',
-                        fontSize: '12px',
+                        fontSize: '14px',
                         outline: 'none'
                     }}
                 >
@@ -161,6 +167,19 @@ export default function SpansTab({
                         </option>
                     ))}
                 </select>
+            </div>
+
+            {/* Table Container */}
+            <div style={{
+                flex: 1,
+                overflow: 'hidden',
+                minHeight: 0
+            }}>
+                <Table
+                    data={filteredSpans}
+                    columns={spanColumns}
+                    onRowClick={onSpanSelect}
+                />
             </div>
 
             <Table
@@ -176,11 +195,12 @@ export default function SpansTab({
                     right: 0,
                     width: '400px',
                     height: '100%',
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--bg-primary)',
                     boxShadow: '-4px 0 16px rgba(0,0,0,0.1)',
                     zIndex: 1000,
                     padding: '24px',
-                    overflowY: 'auto'
+                    overflowY: 'auto',
+                    borderLeft: '1px solid var(--border-primary)'
                 }}>
                     <div style={{
                         display: 'flex',
@@ -188,7 +208,7 @@ export default function SpansTab({
                         alignItems: 'center',
                         marginBottom: '24px'
                     }}>
-                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
+                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>
                             Span Details
                         </h3>
                         <button
@@ -198,7 +218,7 @@ export default function SpansTab({
                                 border: 'none',
                                 fontSize: '20px',
                                 cursor: 'pointer',
-                                color: '#6b7280'
+                                color: 'var(--text-secondary)'
                             }}
                         >
                             ×
@@ -207,16 +227,16 @@ export default function SpansTab({
 
                     <div style={{ display: 'grid', gap: '16px' }}>
                         <div>
-                            <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                 Operation Name
                             </div>
-                            <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                            <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                 {selectedSpan.operationName}
                             </div>
                         </div>
 
                         <div>
-                            <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                 Status
                             </div>
                             <div style={{ marginTop: '4px' }}>
@@ -227,20 +247,20 @@ export default function SpansTab({
                         </div>
 
                         <div>
-                            <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                 Duration
                             </div>
-                            <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                            <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                 {formatDuration(selectedSpan.duration)}
                             </div>
                         </div>
 
                         {selectedSpan.agentType && (
                             <div>
-                                <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                     Agent Type
                                 </div>
-                                <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                                <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                     {selectedSpan.agentType}
                                 </div>
                             </div>
@@ -248,10 +268,10 @@ export default function SpansTab({
 
                         {selectedSpan.model && (
                             <div>
-                                <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                     LLM Model
                                 </div>
-                                <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                                <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                     {selectedSpan.model}
                                 </div>
                             </div>
@@ -260,18 +280,18 @@ export default function SpansTab({
                         {selectedSpan.inputTokens && (
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
-                                    <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                         Input Tokens
                                     </div>
-                                    <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                         {formatNumber(selectedSpan.inputTokens)}
                                     </div>
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                         Output Tokens
                                     </div>
-                                    <div style={{ fontSize: '14px', color: '#1f2937', marginTop: '4px' }}>
+                                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                         {formatNumber(selectedSpan.outputTokens || 0)}
                                     </div>
                                 </div>
@@ -279,22 +299,23 @@ export default function SpansTab({
                         )}
 
                         <div>
-                            <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                                 Attributes
                             </div>
                             <div style={{
                                 marginTop: '8px',
                                 padding: '12px',
-                                backgroundColor: '#f9fafb',
+                                backgroundColor: 'var(--bg-secondary)',
                                 borderRadius: '6px',
                                 fontSize: '12px',
-                                fontFamily: 'monospace'
+                                fontFamily: 'monospace',
+                                border: '1px solid var(--border-primary)'
                             }}>
                                 {Object.entries(selectedSpan.attributes || {})
                                     .map(([key, value]) => (
                                         <div key={key} style={{ marginBottom: '4px' }}>
-                                            <span style={{ color: '#6b7280' }}>{key}:</span>{' '}
-                                            <span style={{ color: '#1f2937' }}>{String(value)}</span>
+                                            <span style={{ color: 'var(--text-secondary)' }}>{key}:</span>{' '}
+                                            <span style={{ color: 'var(--text-primary)' }}>{String(value)}</span>
                                         </div>
                                     ))}
                             </div>

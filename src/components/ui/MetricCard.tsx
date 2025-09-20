@@ -20,14 +20,16 @@ export default function MetricCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
-        backgroundColor: 'white',
-        border: '1px solid #e5e7eb',
+        backgroundColor: 'var(--bg-primary)',
+        border: '1px solid var(--border-primary)',
         borderRadius: '8px',
         padding: '24px',
-        boxShadow: isHovered ? '0 4px 16px rgba(0,0,0,0.12)' : '0 2px 8px rgba(0,0,0,0.08)',
-        transform: isHovered ? 'translateY(-2px)' : 'none',
-        transition: 'all 0.2s ease',
-        cursor: onClick ? 'pointer' : 'default'
+        boxShadow: isHovered ? '0 8px 24px rgba(0,0,0,0.15)' : '0 2px 8px rgba(0,0,0,0.08)',
+        transform: isHovered ? 'translateY(-4px)' : 'none',
+        transition: 'all 0.3s ease',
+        cursor: onClick ? 'pointer' : 'default',
+        position: 'relative',
+        overflow: 'hidden'
       }}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -47,14 +49,25 @@ export default function MetricCard({
         <div style={{
           fontSize: '14px',
           fontWeight: '500',
-          color: '#6b7280',
+          color: 'var(--text-secondary)',
           textTransform: 'uppercase',
           letterSpacing: '0.05em'
         }}>
           {title}
         </div>
         {icon && (
-          <div style={{ color, fontSize: '20px' }}>
+          <div style={{
+            color,
+            fontSize: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '40px',
+            height: '40px',
+            borderRadius: '8px',
+            backgroundColor: `${color}15`,
+            flexShrink: 0
+          }}>
             {icon}
           </div>
         )}
@@ -63,7 +76,7 @@ export default function MetricCard({
       <div style={{
         fontSize: '28px',
         fontWeight: '700',
-        color: '#1f2937',
+        color: 'var(--text-primary)',
         marginBottom: '8px',
         lineHeight: 1
       }}>
@@ -88,7 +101,7 @@ export default function MetricCard({
       {description && (
         <div style={{
           fontSize: '12px',
-          color: '#6b7280',
+          color: 'var(--text-secondary)',
           lineHeight: 1.4
         }}>
           {description}

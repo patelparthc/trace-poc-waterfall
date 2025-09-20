@@ -93,6 +93,8 @@ body {
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-secondary) var(--bg-secondary);
 }
 
 /* Responsive utilities */
@@ -140,7 +142,7 @@ body {
 
 /* Button styles */
 button {
-  border-radius: 8px;
+  border-radius: 0; /* Remove default rounded corners */
   border: 1px solid var(--border-primary);
   padding: 0.6em 1.2em;
   font-size: 1em;
@@ -163,6 +165,15 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+/* Special button styles for specific use cases */
+.btn-rounded {
+  border-radius: 8px;
+}
+
+.btn-pill {
+  border-radius: 50px;
+}
+
 h1 {
   font-size: 2rem;
   line-height: 1.1;
@@ -179,4 +190,35 @@ a {
 
 a:hover {
   color: var(--accent-hover);
+}
+
+/* Custom scrollbar styling for better theme compatibility */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 4px;
+  transition: background-color 0.25s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--bg-secondary);
+}
+
+/* Firefox scrollbar styling */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-secondary) var(--bg-secondary);
 }

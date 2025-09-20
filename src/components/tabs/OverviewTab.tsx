@@ -1,9 +1,8 @@
-import Badge from '../ui/Badge';
 import MetricCard from '../ui/MetricCard';
-import type { DashboardData, Span } from '../../types';
+import type { TabType } from '../../types';
 
 interface OverviewTabProps {
-    readonly data: DashboardData;
+    readonly onNavigateToTab?: (tab: TabType) => void;
     readonly metrics: {
         totalSpans: number;
         successfulSpans: number;
@@ -32,121 +31,70 @@ const formatNumber = (num: number): string => {
     return num.toString();
 };
 
-export default function OverviewTab({ data, metrics }: OverviewTabProps) {
+export default function OverviewTab({ metrics, onNavigateToTab }: OverviewTabProps) {
     return (
-        <div style={{ padding: '32px' }}>
+        <div style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2rem',
+            overflow: 'auto'
+        }}>
             {/* Metrics Grid */}
             <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
                 gap: '24px',
-                marginBottom: '32px'
+                flexShrink: 0
             }}>
                 <MetricCard
                     title="Total Spans"
                     value={formatNumber(metrics.totalSpans)}
                     description={`${metrics.successfulSpans} successful, ${metrics.errorSpans} errors`}
-                    color="#10b981"
+                    color="var(--success)"
+                    icon="🔗"
+                    onClick={() => onNavigateToTab?.('spans')}
                 />
                 <MetricCard
                     title="Success Rate"
                     value={`${metrics.successRate}%`}
                     description={`${metrics.successfulSpans}/${metrics.totalSpans} spans successful`}
-                    color={parseFloat(metrics.successRate) > 90 ? "#10b981" : "#f59e0b"}
+                    color={parseFloat(metrics.successRate) > 90 ? "var(--success)" : "var(--warning)"}
+                    icon="✅"
+                    onClick={() => onNavigateToTab?.('spans')}
                 />
                 <MetricCard
                     title="Sessions"
                     value={formatNumber(metrics.totalSessions)}
                     description={`${metrics.sessionSuccessRate}% success rate`}
-                    color="#3b82f6"
+                    color="var(--accent-primary)"
+                    icon="👥"
+                    onClick={() => onNavigateToTab?.('sessions')}
                 />
                 <MetricCard
                     title="Avg Duration"
                     value={formatDuration(metrics.avgDuration)}
                     description="Average span duration"
-                    color="#8b5cf6"
+                    color="var(--accent-secondary)"
+                    icon="⏱️"
+                    onClick={() => onNavigateToTab?.('traces')}
                 />
                 <MetricCard
                     title="LLM Calls"
                     value={formatNumber(metrics.llmSpansCount)}
                     description={`${formatNumber(metrics.totalInputTokens)} input, ${formatNumber(metrics.totalOutputTokens)} output tokens`}
-                    color="#f59e0b"
+                    color="var(--warning)"
+                    icon="🤖"
+                    onClick={() => onNavigateToTab?.('spans')}
                 />
                 <MetricCard
                     title="Agent Tasks"
                     value={formatNumber(metrics.agentSpansCount)}
                     description={`${Object.keys(metrics.agentTypeMap).length} agent types active`}
-                    color="#ec4899"
+                    color="var(--error)"
+                    icon="⚡"
+                    onClick={() => onNavigateToTab?.('spans')}
                 />
-            </div>
-
-            {/* Recent Activity */}
-            <div style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                border: '1px solid #e5e7eb',
-                overflow: 'hidden'
-            }}>
-                <div style={{
-                    padding: '24px',
-                    borderBottom: '1px solid #e5e7eb',
-                    backgroundColor: '#f9fafb'
-                }}>
-                    <h3 style={{
-                        margin: 0,
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        color: '#1f2937'
-                    }}>
-                        Recent Activity
-                    </h3>
-                </div>
-                <div style={{ padding: '24px' }}>
-                    <div style={{
-                        display: 'grid',
-                        gap: '16px'
-                    }}>
-                        {(() => {
-                            const sortedSpans = [...data.spans].sort((a: Span, b: Span) =>
-                                new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-                            );
-                            return sortedSpans.slice(0, 5).map((span: Span) => (
-                                <div key={span.spanId} style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '16px',
-                                    backgroundColor: '#f9fafb',
-                                    borderRadius: '8px',
-                                    border: '1px solid #e5e7eb'
-                                }}>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{
-                                            fontSize: '14px',
-                                            fontWeight: '500',
-                                            color: '#1f2937',
-                                            marginBottom: '4px'
-                                        }}>
-                                            {span.operationName}
-                                        </div>
-                                        <div style={{
-                                            fontSize: '12px',
-                                            color: '#6b7280'
-                                        }}>
-                                            {span.agentType && `${span.agentType} • `}
-                                            {formatDuration(span.duration)}
-                                        </div>
-                                    </div>
-                                    <div style={{ marginLeft: '16px' }}>
-                                        <Badge variant={span.success ? 'success' : 'error'}>
-                                            {span.success ? 'Success' : 'Error'}
-                                        </Badge>
-                                    </div>
-                                </div>
-                            ));
-                        })()}
-                    </div>
-                </div>
             </div>
         </div>
     );

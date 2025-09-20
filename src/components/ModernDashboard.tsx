@@ -26,13 +26,13 @@ export default function ModernDashboard() {
 
     const applyTheme = (newTheme: Theme) => {
         const root = document.documentElement;
-        
+
         if (newTheme === 'auto') {
             root.removeAttribute('data-theme');
         } else {
             root.setAttribute('data-theme', newTheme);
         }
-        
+
         localStorage.setItem('dashboard-theme', newTheme);
     };
 
@@ -144,7 +144,7 @@ export default function ModernDashboard() {
                         margin: '0 auto 16px'
                     }} />
                     <div style={{ color: 'var(--text-secondary)', fontSize: '16px' }}>
-                        <span className="icon icon-chart" style={{ marginRight: '8px' }} />
+                        <span className="icon icon-chart" style={{ marginRight: '8px' }}></span>
                         Generating OpenTelemetry Data...
                     </div>
                 </div>
@@ -194,7 +194,7 @@ export default function ModernDashboard() {
     const renderTabContent = (): React.ReactNode => {
         switch (activeTab) {
             case 'overview':
-                return <OverviewTab data={data} metrics={metrics} />;
+                return <OverviewTab metrics={metrics} onNavigateToTab={setActiveTab} />;
 
             case 'sessions':
                 return <SessionsTab
@@ -270,14 +270,14 @@ export default function ModernDashboard() {
                     </p>
                 </div>
 
-                <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: '16px',
                     flex: '0 0 auto'
                 }}>
-                    <div style={{ 
-                        fontSize: 'clamp(0.75rem, 1.5vw, 0.875rem)', 
+                    <div style={{
+                        fontSize: 'clamp(0.75rem, 1.5vw, 0.875rem)',
                         color: 'var(--text-secondary)',
                         display: 'flex',
                         alignItems: 'center',
@@ -287,10 +287,11 @@ export default function ModernDashboard() {
                         <span style={{ position: 'absolute', width: '1px', height: '1px', margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)' }}>Last updated:</span>
                         {new Date().toLocaleTimeString()}
                     </div>
-                    
+
                     {/* Theme toggle button */}
                     <button
                         onClick={toggleTheme}
+                        className="btn-rounded"
                         style={{
                             background: 'none',
                             border: '1px solid var(--border-primary)',
@@ -347,7 +348,7 @@ export default function ModernDashboard() {
                                     padding: 'clamp(0.75rem, 2vw, 1rem) clamp(0.75rem, 3vw, 1.25rem)',
                                     cursor: 'pointer',
                                     fontSize: 'clamp(0.75rem, 1.5vw, 0.875rem)',
-                                    fontWeight: '500',
+                                    fontWeight: isActive ? '600' : '500',
                                     color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
                                     borderBottom: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
                                     transition: 'all 0.3s ease',
@@ -360,13 +361,11 @@ export default function ModernDashboard() {
                                 onMouseEnter={(e) => {
                                     if (!isActive) {
                                         e.currentTarget.style.color = 'var(--text-primary)';
-                                        e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
                                     }
                                 }}
                                 onMouseLeave={(e) => {
                                     if (!isActive) {
                                         e.currentTarget.style.color = 'var(--text-secondary)';
-                                        e.currentTarget.style.backgroundColor = 'transparent';
                                     }
                                 }}
                             >
@@ -396,11 +395,18 @@ export default function ModernDashboard() {
             {/* Main Content */}
             <div style={{
                 flex: 1,
-                overflow: 'auto',
+                overflow: 'hidden',
                 backgroundColor: 'var(--bg-secondary)',
-                transition: 'background-color 0.3s ease'
+                transition: 'background-color 0.3s ease',
+                display: 'flex',
+                flexDirection: 'column'
             }}>
-                <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                <div style={{
+                    flex: 1,
+                    overflow: 'auto',
+                    padding: 'clamp(1rem, 3vw, 2rem)',
+                    animation: 'fadeIn 0.3s ease-out'
+                }}>
                     {renderTabContent()}
                 </div>
             </div>

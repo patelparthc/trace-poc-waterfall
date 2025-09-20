@@ -182,12 +182,6 @@ export default function SpansTab({
                 />
             </div>
 
-            <Table
-                data={filteredSpans}
-                columns={spanColumns}
-                onRowClick={onSpanSelect}
-            />
-
             {selectedSpan && (
                 <div style={{
                     position: 'fixed',

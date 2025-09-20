@@ -67,7 +67,7 @@ export default function Table<T>({
       <div style={{
         flex: 1,
         overflow: 'auto',
-        maxHeight: '400px'
+        minHeight: 0
       }}>
         <table style={{
           width: '100%',

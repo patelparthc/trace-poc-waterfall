@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Badge from '../ui/Badge';
 import type { DashboardData, Span } from '../../types';
 
 interface WaterfallTabProps {
     readonly data: DashboardData;
     readonly selectedSessionId?: string | null;
+}
+
+interface SpanNode {
+    span: Span;
+    children: SpanNode[];
+    depth: number;
 }
 
 const formatDuration = (duration: number): string => {
@@ -17,23 +23,370 @@ const formatTime = (date: Date): string => {
     return date.toLocaleTimeString();
 };
 
+// Helper function to build tree structure from flat spans
+const buildSpanTree = (spans: Span[]): SpanNode[] => {
+    const spanMap = new Map<string, SpanNode>();
+    const rootNodes: SpanNode[] = [];
+
+    // Create nodes for all spans
+    spans.forEach(span => {
+        spanMap.set(span.spanId, { span, children: [], depth: 0 });
+    });
+
+    // Build parent-child relationships
+    spans.forEach(span => {
+        const node = spanMap.get(span.spanId)!;
+
+        if (span.parentSpanId && spanMap.has(span.parentSpanId)) {
+            const parent = spanMap.get(span.parentSpanId)!;
+            parent.children.push(node);
+            node.depth = parent.depth + 1;
+        } else {
+            rootNodes.push(node);
+        }
+    });
+
+    // Sort children by start time for each node
+    const sortNode = (node: SpanNode) => {
+        node.children.sort((a, b) =>
+            new Date(a.span.startTime).getTime() - new Date(b.span.startTime).getTime()
+        );
+        node.children.forEach(sortNode);
+    };
+
+    rootNodes.forEach(sortNode);
+    return rootNodes.sort((a, b) =>
+        new Date(a.span.startTime).getTime() - new Date(b.span.startTime).getTime()
+    );
+};
+
+// SpanTreeNode component for rendering individual spans in the tree
+interface SpanTreeNodeProps {
+    node: SpanNode;
+    isExpanded: boolean;
+    expandedSpans: Set<string>;
+    onToggleExpand: (spanId: string) => void;
+    onSelectSpan: (span: Span) => void;
+    selectedSpan: Span | null;
+    timelineBounds: { min: number; max: number };
+    totalDuration: number;
+}
+
+const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
+    node,
+    isExpanded,
+    expandedSpans,
+    onToggleExpand,
+    onSelectSpan,
+    selectedSpan,
+    timelineBounds,
+    totalDuration
+}) => {
+    const { span, children, depth } = node;
+    const hasChildren = children.length > 0;
+    const isSelected = selectedSpan?.spanId === span.spanId;
+
+    const startTime = new Date(span.startTime).getTime();
+    const leftPercent = ((startTime - timelineBounds.min) / totalDuration) * 100;
+    const widthPercent = Math.max((span.duration / totalDuration) * 100, 0.5);
+
+    const indentSize = depth * 20; // 20px per level
+
+    return (
+        <>
+            <button
+                onClick={() => onSelectSpan(span)}
+                style={{
+                    width: '100%',
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(200px, 250px) 1fr minmax(80px, 100px)',
+                    alignItems: 'center',
+                    gap: 'clamp(0.5rem, 2vw, 0.75rem)',
+                    padding: 'clamp(0.5rem, 2vw, 0.625rem)',
+                    borderRadius: '0',
+                    border: 'none',
+                    borderBottom: '1px solid var(--border-primary)',
+                    backgroundColor: isSelected ? 'var(--bg-secondary)' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    textAlign: 'left',
+                    color: 'var(--text-primary)',
+                    outline: 'none'  // Remove focus outline
+                }}
+                onMouseEnter={(e) => {
+                    if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                    }
+                }}
+                onMouseLeave={(e) => {
+                    if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                }}
+            >
+                {/* Operation name with tree structure */}
+                <div style={{ paddingLeft: `${indentSize}px`, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    {/* Tree connector lines */}
+                    {depth > 0 && (
+                        <>
+                            {/* Vertical line from parent */}
+                            <div style={{
+                                position: 'absolute',
+                                left: `${indentSize - 10}px`,
+                                top: hasChildren && isExpanded ? '-15px' : '-12px',
+                                bottom: hasChildren && isExpanded ? '15px' : '50%',
+                                width: '1px',
+                                backgroundColor: 'var(--border-primary)',
+                                opacity: 0.6
+                            }} />
+                            {/* Horizontal line to span */}
+                            <div style={{
+                                position: 'absolute',
+                                left: `${indentSize - 10}px`,
+                                top: '50%',
+                                width: '12px',
+                                height: '1px',
+                                backgroundColor: 'var(--border-primary)',
+                                opacity: 0.6
+                            }} />
+                        </>
+                    )}
+
+                    {/* Expand/collapse icon - positioned absolutely for perfect alignment */}
+                    {hasChildren && (
+                        <div style={{
+                            position: 'absolute',
+                            left: `${indentSize - 18}px`,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            zIndex: 1
+                        }}>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleExpand(span.spanId);
+                                }}
+                                style={{
+                                    background: 'var(--bg-primary)',
+                                    border: '1px solid var(--border-primary)',
+                                    borderRadius: '3px',
+                                    cursor: 'pointer',
+                                    padding: '0',
+                                    fontSize: '10px',
+                                    color: 'var(--text-secondary)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '16px',
+                                    height: '16px',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                    outline: 'none'  // Remove focus outline
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'var(--accent-primary)';
+                                    e.currentTarget.style.color = 'white';
+                                    e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'var(--bg-primary)';
+                                    e.currentTarget.style.color = 'var(--text-secondary)';
+                                    e.currentTarget.style.borderColor = 'var(--border-primary)';
+                                }}
+                            >
+                                {isExpanded ? '−' : '+'}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Content container */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        marginLeft: (() => {
+                            if (hasChildren) return '0';
+                            return depth > 0 ? '2px' : '0';
+                        })(),
+                        minHeight: '20px'
+                    }}>
+                        {/* Span type indicator */}
+                        <div style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: span.success ? 'var(--success)' : 'var(--error)',
+                            marginRight: '8px',
+                            opacity: 0.8,
+                            flexShrink: 0
+                        }} />
+
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{
+                                fontSize: '13px',
+                                fontWeight: depth === 0 ? '600' : '500',
+                                color: depth === 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                marginBottom: '2px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                            }}>
+                                {span.operationName}
+                                {depth > 0 && (
+                                    <span style={{
+                                        fontSize: '11px',
+                                        color: 'var(--text-tertiary)',
+                                        marginLeft: '6px'
+                                    }}>
+                                        ({children.length > 0 ? `${children.length} calls` : 'leaf'})
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{
+                                fontSize: '11px',
+                                color: 'var(--text-secondary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                flexWrap: 'wrap'
+                            }}>
+                                {/* Call sequence indicator */}
+                                <span style={{
+                                    backgroundColor: 'var(--bg-tertiary)',
+                                    color: 'var(--text-tertiary)',
+                                    padding: '1px 4px',
+                                    borderRadius: '2px',
+                                    fontSize: '10px',
+                                    fontFamily: 'monospace'
+                                }}>
+                                    {formatTime(span.startTime).slice(-8)} {/* Show just time portion */}
+                                </span>
+                                {span.agentType && <span>{span.agentType} agent</span>}
+                                {span.toolName && <span>• {span.toolName}</span>}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Timeline bar */}
+                <div style={{
+                    position: 'relative',
+                    height: '24px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    borderRadius: '4px',
+                    overflow: 'hidden'
+                }}>
+                    <div style={{
+                        position: 'absolute',
+                        left: `${leftPercent}%`,
+                        width: `${widthPercent}%`,
+                        height: '100%',
+                        backgroundColor: span.success ? 'var(--success)' : 'var(--error)',
+                        borderRadius: '3px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: '2px'
+                    }}>
+                        {widthPercent > 10 && (
+                            <span style={{
+                                fontSize: '9px',
+                                color: 'white',
+                                fontWeight: '500'
+                            }}>
+                                {formatDuration(span.duration)}
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Duration and status */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '6px'
+                }}>
+                    <span style={{
+                        fontSize: '11px',
+                        color: 'var(--text-secondary)',
+                        fontFamily: 'monospace'
+                    }}>
+                        {formatDuration(span.duration)}
+                    </span>
+                    <Badge variant={span.success ? 'success' : 'error'}>
+                        {span.success ? '✓' : '✗'}
+                    </Badge>
+                </div>
+            </button>
+
+            {/* Render children if expanded */}
+            {hasChildren && isExpanded && children.map(childNode => (
+                <SpanTreeNode
+                    key={childNode.span.spanId}
+                    node={childNode}
+                    isExpanded={expandedSpans.has(childNode.span.spanId)}
+                    expandedSpans={expandedSpans}
+                    onToggleExpand={onToggleExpand}
+                    onSelectSpan={onSelectSpan}
+                    selectedSpan={selectedSpan}
+                    timelineBounds={timelineBounds}
+                    totalDuration={totalDuration}
+                />
+            ))}
+        </>
+    );
+};
+
 export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabProps) {
     // Use selectedSessionId if provided, otherwise default to first session
-    const initialTraceId = selectedSessionId
+    const defaultTraceId = selectedSessionId
         ? data.sessions.find(s => s.sessionId === selectedSessionId)?.traceId || null
         : data.sessions.length > 0 ? data.sessions[0]?.traceId || null : null;
 
-    const [selectedTraceId, setSelectedTraceId] = useState<string | null>(initialTraceId);
+    const [selectedTraceId, setSelectedTraceId] = useState<string | null>(defaultTraceId);
     const [selectedSpan, setSelectedSpan] = useState<Span | null>(null);
+    const [expandedSpans, setExpandedSpans] = useState<Set<string>>(new Set());
 
     // Get traces (sessions) for selection
-    const traces = data.sessions.slice(0, 15); // Show traces for selection
+    const traces = data.sessions.slice(0, 15);
 
     const selectedTrace = traces.find(trace => trace.traceId === selectedTraceId);
     const selectedSpans = selectedTrace ?
         data.spans.filter(span => span.traceId === selectedTrace.traceId).sort((a, b) =>
             new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
         ) : [];
+
+    // Build tree structure
+    const spanTree = useMemo(() => buildSpanTree(selectedSpans), [selectedSpans]);
+
+    // Initially expand root spans and first level
+    useEffect(() => {
+        if (spanTree.length > 0 && expandedSpans.size === 0) {
+            const initialExpanded = new Set<string>();
+            spanTree.forEach(node => {
+                initialExpanded.add(node.span.spanId);
+                // Expand first level children too for better initial view
+                if (node.children.length > 0) {
+                    node.children.forEach(child => {
+                        initialExpanded.add(child.span.spanId);
+                    });
+                }
+            });
+            setExpandedSpans(initialExpanded);
+        }
+    }, [spanTree, expandedSpans.size]);
+
+    const toggleExpand = (spanId: string) => {
+        setExpandedSpans(prev => {
+            const next = new Set(prev);
+            if (next.has(spanId)) {
+                next.delete(spanId);
+            } else {
+                next.add(spanId);
+            }
+            return next;
+        });
+    };
 
     // Calculate timeline bounds for selected trace
     const getTimelineBounds = (spans: Span[]) => {
@@ -128,7 +481,8 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                     textAlign: 'left',
                                     transition: 'all 0.2s',
                                     fontSize: 'clamp(0.625rem, 1.5vw, 0.75rem)',
-                                    color: selectedTraceId === trace.traceId ? 'white' : 'var(--text-primary)'
+                                    color: selectedTraceId === trace.traceId ? 'white' : 'var(--text-primary)',
+                                    outline: 'none'  // Remove focus outline
                                 }}
                                 onMouseEnter={(e) => {
                                     if (selectedTraceId !== trace.traceId) {
@@ -235,117 +589,20 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                             </div>
 
                             {/* Timeline */}
-                            <div style={{ display: 'grid', gap: '8px' }}>
-                                {selectedSpans.map((span, index) => {
-                                    const startTime = new Date(span.startTime).getTime();
-                                    const leftPercent = ((startTime - min) / totalDuration) * 100;
-                                    const widthPercent = Math.max((span.duration / totalDuration) * 100, 0.5);
-
-                                    return (
-                                        <button
-                                            key={span.spanId}
-                                            onClick={() => setSelectedSpan(span)}
-                                            style={{
-                                                width: '100%',
-                                                display: 'grid',
-                                                gridTemplateColumns: 'minmax(150px, 200px) 1fr minmax(80px, 100px)',
-                                                alignItems: 'center',
-                                                gap: 'clamp(0.5rem, 2vw, 0.75rem)',
-                                                padding: 'clamp(0.5rem, 2vw, 0.625rem)',
-                                                borderRadius: '0', // Remove rounded corners
-                                                border: 'none',
-                                                borderBottom: selectedSpan?.spanId === span.spanId ? '3px solid var(--accent-primary)' : '1px solid var(--border-primary)',
-                                                backgroundColor: selectedSpan?.spanId === span.spanId ? 'var(--bg-secondary)' : 'transparent',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.3s ease',
-                                                textAlign: 'left',
-                                                color: 'var(--text-primary)'
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                if (selectedSpan?.spanId !== span.spanId) {
-                                                    e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-                                                }
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                if (selectedSpan?.spanId !== span.spanId) {
-                                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                                }
-                                            }}
-                                        >
-                                            {/* Operation name */}
-                                            <div>
-                                                <div style={{
-                                                    fontSize: '13px',
-                                                    fontWeight: '500',
-                                                    color: 'var(--text-primary)',
-                                                    marginBottom: '2px',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    whiteSpace: 'nowrap'
-                                                }}>
-                                                    {span.operationName}
-                                                </div>
-                                                <div style={{
-                                                    fontSize: '11px',
-                                                    color: 'var(--text-secondary)'
-                                                }}>
-                                                    {span.agentType && `${span.agentType} agent`}
-                                                </div>
-                                            </div>
-
-                                            {/* Timeline bar */}
-                                            <div style={{
-                                                position: 'relative',
-                                                height: '24px',
-                                                backgroundColor: 'var(--bg-secondary)',
-                                                borderRadius: '4px',
-                                                overflow: 'hidden'
-                                            }}>
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    left: `${leftPercent}%`,
-                                                    width: `${widthPercent}%`,
-                                                    height: '100%',
-                                                    backgroundColor: span.success ? 'var(--success)' : 'var(--error)',
-                                                    borderRadius: '3px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    minWidth: '2px'
-                                                }}>
-                                                    {widthPercent > 10 && (
-                                                        <span style={{
-                                                            fontSize: '9px',
-                                                            color: 'white',
-                                                            fontWeight: '500'
-                                                        }}>
-                                                            {formatDuration(span.duration)}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Duration and status */}
-                                            <div style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                                gap: '6px'
-                                            }}>
-                                                <span style={{
-                                                    fontSize: '11px',
-                                                    color: 'var(--text-secondary)',
-                                                    fontFamily: 'monospace'
-                                                }}>
-                                                    {formatDuration(span.duration)}
-                                                </span>
-                                                <Badge variant={span.success ? 'success' : 'error'}>
-                                                    {span.success ? '✓' : '✗'}
-                                                </Badge>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
+                            <div style={{ display: 'grid', gap: '4px' }}>
+                                {spanTree.map(rootNode => (
+                                    <SpanTreeNode
+                                        key={rootNode.span.spanId}
+                                        node={rootNode}
+                                        isExpanded={expandedSpans.has(rootNode.span.spanId)}
+                                        expandedSpans={expandedSpans}
+                                        onToggleExpand={toggleExpand}
+                                        onSelectSpan={setSelectedSpan}
+                                        selectedSpan={selectedSpan}
+                                        timelineBounds={{ min, max }}
+                                        totalDuration={totalDuration}
+                                    />
+                                ))}
                             </div>
 
                             {/* Timeline Summary */}
@@ -414,7 +671,8 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                     fontSize: '18px',
                                     cursor: 'pointer',
                                     color: 'var(--text-secondary)',
-                                    padding: '4px'
+                                    padding: '4px',
+                                    outline: 'none'  // Remove focus outline
                                 }}
                             >
                                 ×

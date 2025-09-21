@@ -1,29 +1,29 @@
 // Core OpenTelemetry Types for Agentic AI Systems
 
 export interface SpanAttributes {
-  'ai.agent.id'?: string;
-  'ai.agent.type'?: string;
-  'ai.agent.state'?: string;
-  'ai.session.id'?: string;
-  'ai.session.type'?: string;
-  'ai.task.id'?: string;
-  'task.type'?: string;
-  'task.description'?: string;
-  'ai.llm.model'?: string;
-  'ai.token.count.input'?: number;
-  'ai.token.count.output'?: number;
-  'ai.tool.name'?: string;
-  'tool.input_size'?: number;
-  'tool.output_size'?: number;
-  'tool.operation'?: string;
-  'llm.request.type'?: string;
-  'llm.temperature'?: number;
-  'error.type'?: string;
-  'error.message'?: string;
-  'session.num_tasks'?: number;
-  'session.num_agents'?: number;
-  'session.total_tokens'?: number;
-  'user.id'?: string;
+  "ai.agent.id"?: string;
+  "ai.agent.type"?: string;
+  "ai.agent.state"?: string;
+  "ai.session.id"?: string;
+  "ai.session.type"?: string;
+  "ai.task.id"?: string;
+  "task.type"?: string;
+  "task.description"?: string;
+  "ai.llm.model"?: string;
+  "ai.token.count.input"?: number;
+  "ai.token.count.output"?: number;
+  "ai.tool.name"?: string;
+  "tool.input_size"?: number;
+  "tool.output_size"?: number;
+  "tool.operation"?: string;
+  "llm.request.type"?: string;
+  "llm.temperature"?: number;
+  "error.type"?: string;
+  "error.message"?: string;
+  "session.num_tasks"?: number;
+  "session.num_agents"?: number;
+  "session.total_tokens"?: number;
+  "user.id"?: string;
   // Allow any additional attributes
   [key: string]: any;
 }
@@ -39,7 +39,7 @@ export interface Span {
   duration: number;
   success: boolean;
   attributes: SpanAttributes;
-  
+
   // AI-specific fields
   agentId?: string;
   agentType?: string;
@@ -48,7 +48,7 @@ export interface Span {
   inputTokens?: number;
   outputTokens?: number;
   toolName?: string;
-  
+
   // Additional context
   tags?: Record<string, string>;
   logs?: Array<{
@@ -61,7 +61,7 @@ export interface Span {
 export interface Session {
   sessionId: string;
   userId: string;
-  sessionType: 'interactive' | 'batch' | 'automated' | 'collaborative';
+  sessionType: "interactive" | "batch" | "automated" | "collaborative";
   startTime: Date;
   endTime: Date;
   duration: number;
@@ -111,12 +111,12 @@ export interface TableColumn<T> {
 }
 
 // Badge component types
-export type BadgeVariant = 'success' | 'error' | 'warning' | 'info' | 'default';
+export type BadgeVariant = "success" | "error" | "warning" | "info" | "default";
 
 export interface BadgeProps {
   readonly children: React.ReactNode;
   readonly variant?: BadgeVariant;
-  readonly size?: 'small' | 'medium' | 'large';
+  readonly size?: "small" | "medium" | "large";
   readonly className?: string;
 }
 
@@ -126,7 +126,7 @@ export interface MetricCardProps {
   readonly value: string | number;
   readonly change?: {
     value: number;
-    trend: 'up' | 'down';
+    trend: "up" | "down";
     isPositive?: boolean;
   };
   readonly description?: string;
@@ -134,10 +134,16 @@ export interface MetricCardProps {
   readonly color?: string;
   readonly onClick?: () => void;
   readonly className?: string;
+  readonly isAuroraEnabled?: boolean;
 }
 
 // Tab types for dashboard
-export type TabType = 'overview' | 'sessions' | 'spans' | 'traces' | 'waterfall';
+export type TabType =
+  | "overview"
+  | "sessions"
+  | "spans"
+  | "traces"
+  | "waterfall";
 
 export interface TabProps {
   readonly data: DashboardData;

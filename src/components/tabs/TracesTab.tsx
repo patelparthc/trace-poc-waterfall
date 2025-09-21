@@ -4,6 +4,7 @@ import type { DashboardData, TableColumn } from '../../types';
 
 interface TracesTabProps {
     readonly data: DashboardData;
+    readonly isAuroraEnabled?: boolean;
 }
 
 const formatDuration = (duration: number): string => {
@@ -18,7 +19,7 @@ const formatNumber = (num: number): string => {
     return num.toString();
 };
 
-export default function TracesTab({ data }: TracesTabProps) {
+export default function TracesTab({ data, isAuroraEnabled = false }: TracesTabProps) {
     // Group spans by session to create traces
     const traces = data.sessions.map(session => {
         const sessionSpans = data.spans.filter(span => span.traceId === session.traceId);
@@ -118,6 +119,7 @@ export default function TracesTab({ data }: TracesTabProps) {
                     data={traces}
                     columns={traceColumns}
                     onRowClick={(trace) => console.log('Selected trace:', trace)}
+                    isAuroraEnabled={isAuroraEnabled}
                 />
             </div>
         </div>

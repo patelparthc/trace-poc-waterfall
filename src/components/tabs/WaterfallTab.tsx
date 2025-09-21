@@ -5,6 +5,7 @@ import type { DashboardData, Span } from '../../types';
 interface WaterfallTabProps {
     readonly data: DashboardData;
     readonly selectedSessionId?: string | null;
+    readonly isAuroraEnabled?: boolean;
 }
 
 interface SpanNode {
@@ -18,6 +19,7 @@ const formatDuration = (duration: number): string => {
     if (duration < 60000) return `${(duration / 1000).toFixed(1)}s`;
     return `${(duration / 60000).toFixed(1)}m`;
 };
+
 
 const formatTime = (date: Date): string => {
     return date.toLocaleTimeString();
@@ -70,6 +72,7 @@ interface SpanTreeNodeProps {
     selectedSpan: Span | null;
     timelineBounds: { min: number; max: number };
     totalDuration: number;
+    isAuroraEnabled?: boolean;
 }
 
 const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
@@ -80,7 +83,8 @@ const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
     onSelectSpan,
     selectedSpan,
     timelineBounds,
-    totalDuration
+    totalDuration,
+    isAuroraEnabled = false
 }) => {
     const { span, children, depth } = node;
     const hasChildren = children.length > 0;
@@ -115,7 +119,7 @@ const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
                 }}
                 onMouseEnter={(e) => {
                     if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                        e.currentTarget.style.backgroundColor = isAuroraEnabled ? 'rgba(255, 255, 255, 0.1)' : 'var(--bg-secondary)';
                     }
                 }}
                 onMouseLeave={(e) => {
@@ -185,7 +189,6 @@ const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
                                     minWidth: '18px',
                                     minHeight: '18px',
                                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
                                     outline: 'none'  // Remove focus outline
                                 }}
                                 onMouseEnter={(e) => {
@@ -328,7 +331,7 @@ const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
             {hasChildren && (
                 <div
                     style={{
-                        maxHeight: isExpanded ? '2000px' : '0px',
+                        maxHeight: isExpanded ? '10000px' : '0px', // Increased to allow deeper hierarchies
                         overflow: 'hidden',
                         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                         opacity: isExpanded ? 1 : 0,
@@ -354,6 +357,7 @@ const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
                                 selectedSpan={selectedSpan}
                                 timelineBounds={timelineBounds}
                                 totalDuration={totalDuration}
+                                isAuroraEnabled={isAuroraEnabled}
                             />
                         </div>
                     ))}
@@ -363,7 +367,7 @@ const SpanTreeNode: React.FC<SpanTreeNodeProps> = ({
     );
 };
 
-export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabProps) {
+export default function WaterfallTab({ data, selectedSessionId, isAuroraEnabled = false }: WaterfallTabProps) {
     // Use selectedSessionId if provided, otherwise default to first session
     const defaultTraceId = selectedSessionId
         ? data.sessions.find(s => s.sessionId === selectedSessionId)?.traceId || null
@@ -372,8 +376,7 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
     const [selectedTraceId, setSelectedTraceId] = useState<string | null>(defaultTraceId);
     const [selectedSpan, setSelectedSpan] = useState<Span | null>(null);
     const [expandedSpans, setExpandedSpans] = useState<Set<string>>(new Set());
-
-    // Get traces (sessions) for selection
+    const [hasInitialExpanded, setHasInitialExpanded] = useState<boolean>(false);    // Get traces (sessions) for selection
     const traces = data.sessions.slice(0, 15);
 
     const selectedTrace = traces.find(trace => trace.traceId === selectedTraceId);
@@ -385,9 +388,14 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
     // Build tree structure
     const spanTree = useMemo(() => buildSpanTree(selectedSpans), [selectedSpans]);
 
+    // Reset initial expansion flag when trace changes
+    useEffect(() => {
+        setHasInitialExpanded(false);
+    }, [selectedTraceId]);
+
     // Initially expand root spans and first level
     useEffect(() => {
-        if (spanTree.length > 0 && expandedSpans.size === 0) {
+        if (spanTree.length > 0 && !hasInitialExpanded) {
             const initialExpanded = new Set<string>();
             spanTree.forEach(node => {
                 initialExpanded.add(node.span.spanId);
@@ -399,8 +407,9 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                 }
             });
             setExpandedSpans(initialExpanded);
+            setHasInitialExpanded(true);
         }
-    }, [spanTree, expandedSpans.size]);
+    }, [spanTree, hasInitialExpanded]); // Use hasInitialExpanded flag instead of expandedSpans.size
 
     const toggleExpand = (spanId: string) => {
         setExpandedSpans(prev => {
@@ -412,6 +421,22 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
             }
             return next;
         });
+    };
+
+    const expandAll = () => {
+        const allSpanIds = new Set<string>();
+        const addSpanIds = (nodes: SpanNode[]) => {
+            nodes.forEach(node => {
+                allSpanIds.add(node.span.spanId);
+                addSpanIds(node.children);
+            });
+        };
+        addSpanIds(spanTree);
+        setExpandedSpans(allSpanIds);
+    };
+
+    const collapseAll = () => {
+        setExpandedSpans(new Set());
     };
 
     // Calculate timeline bounds for selected trace
@@ -428,7 +453,12 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
     const totalDuration = max - min;
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: 'transparent',
+        }}>
             {/* Header */}
             <div style={{
                 marginBottom: '24px',
@@ -437,7 +467,9 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                 alignItems: 'center',
                 flexShrink: 0,
                 flexWrap: 'wrap',
-                gap: '1rem'
+                gap: '1rem',
+                backdropFilter: isAuroraEnabled ? 'blur(0px)' : 'none',
+                transition: 'backdrop-filter 0.3s ease'
             }}>
                 <h2 style={{
                     margin: 0,
@@ -460,6 +492,72 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                 }}>
                     <span className="icon icon-sessions" />
                     Sessions ({traces.length} of {data.sessions.length}) • Click spans for details
+
+                    {/* Expand/Collapse All Buttons */}
+                    <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                expandAll();
+                            }}
+                            style={{
+                                padding: '0.25rem 0.5rem',
+                                backgroundColor: isAuroraEnabled ? 'rgba(76, 175, 80, 0.2)' : 'var(--bg-secondary)',
+                                color: isAuroraEnabled ? '#ffffff' : 'var(--text-secondary)',
+                                border: isAuroraEnabled ? '1px solid rgba(76, 175, 80, 0.4)' : '1px solid var(--border-primary)',
+                                borderRadius: '4px',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                backdropFilter: isAuroraEnabled ? 'blur(8px)' : 'none',
+                                outline: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = isAuroraEnabled ? 'rgba(76, 175, 80, 0.3)' : 'var(--success)';
+                                e.currentTarget.style.color = 'white';
+                                e.currentTarget.style.borderColor = 'var(--success)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = isAuroraEnabled ? 'rgba(76, 175, 80, 0.2)' : 'var(--bg-secondary)';
+                                e.currentTarget.style.color = isAuroraEnabled ? '#ffffff' : 'var(--text-secondary)';
+                                e.currentTarget.style.borderColor = isAuroraEnabled ? 'rgba(76, 175, 80, 0.4)' : 'var(--border-primary)';
+                            }}
+                        >
+                            📂 Expand All
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                collapseAll();
+                            }}
+                            style={{
+                                padding: '0.25rem 0.5rem',
+                                backgroundColor: isAuroraEnabled ? 'rgba(244, 67, 54, 0.2)' : 'var(--bg-secondary)',
+                                color: isAuroraEnabled ? '#ffffff' : 'var(--text-secondary)',
+                                border: isAuroraEnabled ? '1px solid rgba(244, 67, 54, 0.4)' : '1px solid var(--border-primary)',
+                                borderRadius: '4px',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                backdropFilter: isAuroraEnabled ? 'blur(8px)' : 'none',
+                                outline: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = isAuroraEnabled ? 'rgba(244, 67, 54, 0.3)' : 'var(--error)';
+                                e.currentTarget.style.color = 'white';
+                                e.currentTarget.style.borderColor = 'var(--error)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = isAuroraEnabled ? 'rgba(244, 67, 54, 0.2)' : 'var(--bg-secondary)';
+                                e.currentTarget.style.color = isAuroraEnabled ? '#ffffff' : 'var(--text-secondary)';
+                                e.currentTarget.style.borderColor = isAuroraEnabled ? 'rgba(244, 67, 54, 0.4)' : 'var(--border-primary)';
+                            }}
+                        >
+                            📁 Collapse All
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -475,12 +573,13 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
             }}>
                 {/* Left Panel - Trace Selector */}
                 <div style={{
-                    backgroundColor: 'var(--bg-primary)',
+                    backgroundColor: isAuroraEnabled ? 'rgba(0, 0, 0, 0.6)' : 'var(--bg-primary)',
                     borderRadius: '8px',
-                    border: '1px solid var(--border-primary)',
+                    border: isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid var(--border-primary)',
                     padding: 'clamp(0.75rem, 2vw, 1rem)',
                     overflowY: 'auto',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    backdropFilter: isAuroraEnabled ? 'blur(20px)' : 'none'
                 }}>
                     <h3 style={{
                         margin: '0 0 16px 0',
@@ -499,39 +598,68 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                     setSelectedSpan(null); // Clear span selection when changing trace
                                 }}
                                 style={{
+                                    width: '100%',
                                     padding: 'clamp(0.5rem, 2vw, 0.75rem)',
-                                    backgroundColor: selectedTraceId === trace.traceId ? 'var(--accent-primary)' : 'var(--bg-primary)',
-                                    border: selectedTraceId === trace.traceId ? '2px solid var(--accent-primary)' : '1px solid var(--border-primary)',
+                                    backgroundColor: selectedTraceId === trace.traceId
+                                        ? (isAuroraEnabled ? 'rgba(37, 99, 235, 0.3)' : 'var(--accent-primary)')
+                                        : (isAuroraEnabled ? 'rgba(0, 0, 0, 0.4)' : 'var(--bg-primary)'),
+                                    border: selectedTraceId === trace.traceId
+                                        ? (isAuroraEnabled ? '1px solid rgba(37, 99, 235, 0.5)' : '2px solid var(--accent-primary)')
+                                        : (isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid var(--border-primary)'),
                                     borderRadius: '6px',
                                     cursor: 'pointer',
                                     textAlign: 'left',
-                                    transition: 'all 0.2s',
+                                    transition: 'all 0.2s ease',
                                     fontSize: 'clamp(0.625rem, 1.5vw, 0.75rem)',
-                                    color: selectedTraceId === trace.traceId ? 'white' : 'var(--text-primary)',
-                                    outline: 'none'  // Remove focus outline
+                                    color: selectedTraceId === trace.traceId
+                                        ? 'white'
+                                        : (isAuroraEnabled ? '#ffffff' : 'var(--text-primary)'),
+                                    outline: 'none',
+                                    backdropFilter: isAuroraEnabled ? 'blur(12px)' : 'none',
+                                    WebkitBackdropFilter: isAuroraEnabled ? 'blur(12px)' : 'none'
                                 }}
                                 onMouseEnter={(e) => {
                                     if (selectedTraceId !== trace.traceId) {
-                                        e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-                                        e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                                        e.currentTarget.style.backgroundColor = isAuroraEnabled
+                                            ? 'rgba(255, 255, 255, 0.1)'
+                                            : 'var(--bg-secondary)';
+                                        e.currentTarget.style.borderColor = isAuroraEnabled
+                                            ? 'rgba(37, 99, 235, 0.4)'
+                                            : 'var(--accent-primary)';
+                                        if (isAuroraEnabled) {
+                                            e.currentTarget.style.backdropFilter = 'blur(15px)';
+                                            (e.currentTarget.style as any).webkitBackdropFilter = 'blur(15px)';
+                                        }
                                     }
                                 }}
                                 onMouseLeave={(e) => {
                                     if (selectedTraceId !== trace.traceId) {
-                                        e.currentTarget.style.backgroundColor = 'var(--bg-primary)';
-                                        e.currentTarget.style.borderColor = 'var(--border-primary)';
+                                        e.currentTarget.style.backgroundColor = isAuroraEnabled
+                                            ? 'rgba(0, 0, 0, 0.4)'
+                                            : 'var(--bg-primary)';
+                                        e.currentTarget.style.borderColor = isAuroraEnabled
+                                            ? 'rgba(255, 255, 255, 0.2)'
+                                            : 'var(--border-primary)';
+                                        if (isAuroraEnabled) {
+                                            e.currentTarget.style.backdropFilter = 'blur(12px)';
+                                            (e.currentTarget.style as any).webkitBackdropFilter = 'blur(12px)';
+                                        }
                                     }
                                 }}
                             >
                                 <div style={{
                                     fontWeight: '500',
-                                    color: selectedTraceId === trace.traceId ? 'white' : 'var(--text-primary)',
+                                    color: selectedTraceId === trace.traceId
+                                        ? 'white'
+                                        : (isAuroraEnabled ? '#ffffff' : 'var(--text-primary)'),
                                     marginBottom: '4px'
                                 }}>
                                     {trace.sessionId}
                                 </div>
                                 <div style={{
-                                    color: selectedTraceId === trace.traceId ? 'rgba(255, 255, 255, 0.8)' : 'var(--text-secondary)',
+                                    color: selectedTraceId === trace.traceId
+                                        ? 'rgba(255, 255, 255, 0.8)'
+                                        : (isAuroraEnabled ? 'rgba(255, 255, 255, 0.7)' : 'var(--text-secondary)'),
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '6px'
@@ -549,12 +677,15 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
 
                 {/* Center Panel - Waterfall Visualization */}
                 <div style={{
-                    backgroundColor: 'var(--bg-primary)',
+                    backgroundColor: isAuroraEnabled ? 'rgba(0, 0, 0, 0.6)' : 'var(--bg-primary)',
                     borderRadius: '8px',
-                    border: '1px solid var(--border-primary)',
+                    border: isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid var(--border-primary)',
                     padding: 'clamp(1rem, 3vw, 1.25rem)',
                     overflowY: 'auto',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    backdropFilter: isAuroraEnabled ? 'blur(20px)' : 'none',
+                    minHeight: 0, // Allow content to shrink
+                    maxHeight: '100%' // Ensure it doesn't exceed container
                 }}>
                     {selectedTrace && selectedSpans.length > 0 ? (
                         <>
@@ -562,10 +693,11 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                             <div style={{
                                 marginBottom: '20px',
                                 padding: 'clamp(0.75rem, 2vw, 1rem)',
-                                backgroundColor: 'var(--bg-secondary)',
+                                backgroundColor: isAuroraEnabled ? 'rgba(0, 0, 0, 0.4)' : 'var(--bg-secondary)',
                                 borderRadius: '6px',
-                                border: '1px solid var(--border-primary)',
-                                transition: 'all 0.3s ease'
+                                border: isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid var(--border-primary)',
+                                transition: 'all 0.3s ease',
+                                backdropFilter: isAuroraEnabled ? 'blur(12px)' : 'none'
                             }}>
                                 <div style={{
                                     display: 'flex',
@@ -627,6 +759,7 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                                         selectedSpan={selectedSpan}
                                         timelineBounds={{ min, max }}
                                         totalDuration={totalDuration}
+                                        isAuroraEnabled={isAuroraEnabled}
                                     />
                                 ))}
                             </div>
@@ -674,11 +807,13 @@ export default function WaterfallTab({ data, selectedSessionId }: WaterfallTabPr
                 {/* Right Panel - Span Details */}
                 {selectedSpan && (
                     <div style={{
-                        backgroundColor: 'var(--bg-primary)',
+                        backgroundColor: isAuroraEnabled ? 'rgba(0, 0, 0, 0.6)' : 'var(--bg-primary)',
                         borderRadius: '8px',
-                        border: '1px solid var(--border-primary)',
+                        border: isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid var(--border-primary)',
                         padding: '20px',
-                        overflowY: 'auto'
+                        overflowY: 'auto',
+                        backdropFilter: isAuroraEnabled ? 'blur(20px)' : 'none',
+                        transition: 'all 0.3s ease'
                     }}>
                         <div style={{
                             display: 'flex',

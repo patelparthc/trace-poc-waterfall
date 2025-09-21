@@ -7,6 +7,7 @@ interface SessionsTabProps {
     readonly data: DashboardData;
     readonly totalSessions: number;
     readonly onNavigateToWaterfall?: (sessionId: string) => void;
+    readonly isAuroraEnabled?: boolean;
 }
 
 const formatDuration = (duration: number): string => {
@@ -21,7 +22,7 @@ const formatNumber = (num: number): string => {
     return num.toString();
 };
 
-export default function SessionsTab({ data, totalSessions, onNavigateToWaterfall }: SessionsTabProps) {
+export default function SessionsTab({ data, totalSessions, onNavigateToWaterfall, isAuroraEnabled = false }: SessionsTabProps) {
     const [filterStatus, setFilterStatus] = useState<'all' | 'success' | 'failed'>('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -139,13 +140,14 @@ export default function SessionsTab({ data, totalSessions, onNavigateToWaterfall
                     onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
                         padding: '8px 12px',
-                        border: '1px solid var(--border-secondary)',
+                        border: isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid var(--border-secondary)',
                         borderRadius: '6px',
                         fontSize: '14px',
                         minWidth: '200px',
                         outline: 'none',
-                        backgroundColor: 'var(--bg-primary)',
-                        color: 'var(--text-primary)'
+                        backgroundColor: isAuroraEnabled ? 'rgba(0, 0, 0, 0.4)' : 'var(--bg-primary)',
+                        color: isAuroraEnabled ? '#ffffff' : 'var(--text-primary)',
+                        backdropFilter: isAuroraEnabled ? 'blur(12px)' : 'none'
                     }}
                 />
 
@@ -157,13 +159,18 @@ export default function SessionsTab({ data, totalSessions, onNavigateToWaterfall
                             onClick={() => setFilterStatus(status as any)}
                             style={{
                                 padding: '6px 12px',
-                                border: filterStatus === status ? '1px solid var(--accent-primary)' : '1px solid var(--border-secondary)',
-                                backgroundColor: filterStatus === status ? 'var(--accent-primary)' : 'var(--bg-primary)',
-                                color: filterStatus === status ? 'white' : 'var(--text-primary)',
+                                border: filterStatus === status ?
+                                    (isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.4)' : '1px solid var(--accent-primary)') :
+                                    (isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid var(--border-secondary)'),
+                                backgroundColor: filterStatus === status ?
+                                    (isAuroraEnabled ? 'rgba(255, 255, 255, 0.2)' : 'var(--accent-primary)') :
+                                    (isAuroraEnabled ? 'rgba(0, 0, 0, 0.4)' : 'var(--bg-primary)'),
+                                color: isAuroraEnabled ? '#ffffff' : (filterStatus === status ? 'white' : 'var(--text-primary)'),
                                 borderRadius: '6px',
                                 fontSize: '12px',
                                 cursor: 'pointer',
-                                textTransform: 'capitalize'
+                                textTransform: 'capitalize',
+                                backdropFilter: isAuroraEnabled ? 'blur(12px)' : 'none'
                             }}
                         >
                             {status}
@@ -186,6 +193,7 @@ export default function SessionsTab({ data, totalSessions, onNavigateToWaterfall
                 <Table
                     data={filteredSessions}
                     columns={sessionColumns}
+                    isAuroraEnabled={isAuroraEnabled}
                     onRowClick={(session) => {
                         console.log('Selected session:', session);
                         if (onNavigateToWaterfall) {

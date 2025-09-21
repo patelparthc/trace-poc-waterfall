@@ -5,9 +5,10 @@ import SessionsTab from './tabs/SessionsTab';
 import SpansTab from './tabs/SpansTab';
 import TracesTab from './tabs/TracesTab';
 import WaterfallTab from './tabs/WaterfallTab';
+import AuroraBackground from './ui/AuroraBackground';
 import type { DashboardData, Span, TabType } from '../types';
 
-type Theme = 'light' | 'dark' | 'auto';
+type Theme = 'light' | 'dark' | 'animated';
 
 export default function ModernDashboard() {
     const [data, setData] = useState<DashboardData | null>(null);
@@ -15,20 +16,78 @@ export default function ModernDashboard() {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [selectedSpan, setSelectedSpan] = useState<Span | null>(null);
     const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-    const [theme, setTheme] = useState<Theme>('auto');
+    const [theme, setTheme] = useState<Theme>('light');
+    const [isAuroraEnabled, setIsAuroraEnabled] = useState(false);
+
+    // Sync Aurora state with theme
+    useEffect(() => {
+        setIsAuroraEnabled(theme === 'animated');
+    }, [theme]);
 
     // Theme toggle functionality
     useEffect(() => {
-        const savedTheme = localStorage.getItem('dashboard-theme') as Theme || 'auto';
+        const savedTheme = localStorage.getItem('dashboard-theme') as Theme || 'light';
         setTheme(savedTheme);
         applyTheme(savedTheme);
     }, []);
 
+    // Aurora background management - apply global dark theme when enabled
+    useEffect(() => {
+        if (isAuroraEnabled) {
+            // Make body and root transparent for Aurora background
+            document.body.style.backgroundColor = 'transparent';
+            document.documentElement.style.backgroundColor = 'transparent';
+
+            // Apply global Aurora theme styles
+            const appElement = document.querySelector('.App') as HTMLElement;
+            const rootElement = document.getElementById('root') as HTMLElement;
+
+            if (appElement) {
+                appElement.style.backgroundColor = 'transparent';
+                appElement.style.color = '#ffffff';
+            }
+            if (rootElement) {
+                rootElement.style.backgroundColor = 'transparent';
+            }
+        } else {
+            // Restore original backgrounds
+            document.body.style.backgroundColor = 'var(--bg-primary)';
+            document.documentElement.style.backgroundColor = 'var(--bg-primary)';
+
+            const appElement = document.querySelector('.App') as HTMLElement;
+            const rootElement = document.getElementById('root') as HTMLElement;
+
+            if (appElement) {
+                appElement.style.backgroundColor = 'var(--bg-primary)';
+                appElement.style.color = '';
+            }
+            if (rootElement) {
+                rootElement.style.backgroundColor = 'var(--bg-primary)';
+            }
+        }
+
+        return () => {
+            // Cleanup
+            document.body.style.backgroundColor = 'var(--bg-primary)';
+            document.documentElement.style.backgroundColor = 'var(--bg-primary)';
+            const appElement = document.querySelector('.App') as HTMLElement;
+            const rootElement = document.getElementById('root') as HTMLElement;
+
+            if (appElement) {
+                appElement.style.backgroundColor = 'var(--bg-primary)';
+                appElement.style.color = '';
+            }
+            if (rootElement) {
+                rootElement.style.backgroundColor = 'var(--bg-primary)';
+            }
+        };
+    }, [isAuroraEnabled]);
+
     const applyTheme = (newTheme: Theme) => {
         const root = document.documentElement;
 
-        if (newTheme === 'auto') {
-            root.removeAttribute('data-theme');
+        if (newTheme === 'animated') {
+            root.removeAttribute('data-theme'); // Use default for animated
         } else {
             root.setAttribute('data-theme', newTheme);
         }
@@ -41,7 +100,7 @@ export default function ModernDashboard() {
         if (theme === 'light') {
             newTheme = 'dark';
         } else if (theme === 'dark') {
-            newTheme = 'auto';
+            newTheme = 'animated';
         } else {
             newTheme = 'light';
         }
@@ -188,19 +247,20 @@ export default function ModernDashboard() {
     const getThemeIcon = (): string => {
         if (theme === 'light') return 'icon-theme-light';
         if (theme === 'dark') return 'icon-theme';
-        return 'icon-settings';
+        return 'icon-stars'; // Aurora/animated theme
     };
 
     const renderTabContent = (): React.ReactNode => {
         switch (activeTab) {
             case 'overview':
-                return <OverviewTab metrics={metrics} onNavigateToTab={setActiveTab} />;
+                return <OverviewTab metrics={metrics} onNavigateToTab={setActiveTab} isAuroraEnabled={isAuroraEnabled} />;
 
             case 'sessions':
                 return <SessionsTab
                     data={data}
                     totalSessions={metrics.totalSessions}
                     onNavigateToWaterfall={handleNavigateToWaterfall}
+                    isAuroraEnabled={isAuroraEnabled}
                 />;
 
             case 'spans':
@@ -211,14 +271,20 @@ export default function ModernDashboard() {
                         selectedSpan={selectedSpan}
                         onSpanSelect={setSelectedSpan}
                         onSpanDeselect={() => setSelectedSpan(null)}
+                        isAuroraEnabled={isAuroraEnabled}
                     />
                 );
 
             case 'traces':
-                return <TracesTab data={data} />;
+                return <TracesTab data={data} isAuroraEnabled={isAuroraEnabled} />;
 
             case 'waterfall':
-                return <WaterfallTab data={data} selectedSessionId={selectedSessionId} />;
+                return <WaterfallTab
+                    data={data}
+                    selectedSessionId={selectedSessionId}
+                    isAuroraEnabled={isAuroraEnabled}
+                    onAuroraToggle={setIsAuroraEnabled}
+                />;
 
             default:
                 return null;
@@ -229,190 +295,239 @@ export default function ModernDashboard() {
         <div style={{
             width: '100vw',
             height: '100vh',
-            backgroundColor: 'var(--bg-primary)',
+            backgroundColor: isAuroraEnabled ? 'transparent' : 'var(--bg-primary)',
             fontFamily: '"Open Sans", system-ui, -apple-system, sans-serif',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            transition: 'background-color 0.3s ease'
+            transition: 'background-color 0.3s ease',
+            position: 'relative'
         }}>
-            {/* Header */}
-            <div style={{
-                borderBottom: '1px solid var(--border-primary)',
-                backgroundColor: 'var(--bg-primary)',
-                padding: '0 1rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                minHeight: '64px',
-                flexWrap: 'wrap',
-                gap: '1rem'
-            }}>
-                <div style={{ flex: '1 1 auto', minWidth: '200px' }}>
-                    <h1 style={{
-                        margin: 0,
-                        fontSize: 'clamp(1.25rem, 2vw, 1.5rem)',
-                        fontWeight: '600',
-                        color: 'var(--text-primary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                    }}>
-                        <span className="icon icon-chart" />
-                        OpenTelemetry Dashboard
-                    </h1>
-                    <p style={{
-                        margin: '4px 0 0 0',
-                        fontSize: 'clamp(0.75rem, 1.5vw, 0.875rem)',
-                        color: 'var(--text-secondary)'
-                    }}>
-                        Agentic AI System Observability
-                    </p>
-                </div>
+            {/* Aurora Background - Full Website */}
+            {isAuroraEnabled && (
+                <AuroraBackground
+                    enabled={true}
+                    colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
+                    blend={0.6}
+                    amplitude={1.2}
+                    speed={0.3}
+                />
+            )}
 
+            {/* Content Container */}
+            <div style={{
+                position: 'relative',
+                zIndex: 10,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden'
+            }}>
+                {/* Header */}
                 <div style={{
+                    borderBottom: isAuroraEnabled ? 'none' : '1px solid var(--border-primary)',
+                    backgroundColor: isAuroraEnabled ? 'transparent' : 'var(--bg-primary)',
+                    padding: '0 1rem',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '16px',
-                    flex: '0 0 auto'
+                    justifyContent: 'space-between',
+                    minHeight: '64px',
+                    flexWrap: 'wrap',
+                    gap: '1rem',
+                    backdropFilter: isAuroraEnabled ? 'blur(10px)' : 'none',
+                    transition: 'all 0.3s ease'
                 }}>
-                    <div style={{
-                        fontSize: 'clamp(0.75rem, 1.5vw, 0.875rem)',
-                        color: 'var(--text-secondary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.25rem'
-                    }}>
-                        <span className="icon icon-time" />
-                        <span style={{ position: 'absolute', width: '1px', height: '1px', margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)' }}>Last updated:</span>
-                        {new Date().toLocaleTimeString()}
-                    </div>
-
-                    {/* Theme toggle button */}
-                    <button
-                        onClick={toggleTheme}
-                        className="btn-rounded"
-                        style={{
-                            background: 'none',
-                            border: '1px solid var(--border-primary)',
-                            padding: '8px',
-                            cursor: 'pointer',
-                            borderRadius: '6px',
-                            color: 'var(--text-secondary)',
-                            transition: 'all 0.2s ease',
-                            fontSize: '1rem',
-                            minWidth: '36px',
-                            height: '36px',
+                    <div style={{ flex: '1 1 auto', minWidth: '200px' }}>
+                        <h1 style={{
+                            margin: 0,
+                            fontSize: 'clamp(1.25rem, 2vw, 1.5rem)',
+                            fontWeight: '600',
+                            color: isAuroraEnabled ? '#ffffff' : 'var(--text-primary)',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
-                        title={`Current theme: ${theme}. Click to cycle through light/dark/auto modes.`}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-                            e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                            e.currentTarget.style.borderColor = 'var(--border-primary)';
-                        }}
-                    >
-                        <span className={`icon ${getThemeIcon()}`} />
-                    </button>
-                </div>
-            </div>
+                            gap: '0.5rem',
+                            textShadow: isAuroraEnabled ? '0 2px 4px rgba(0, 0, 0, 0.5)' : 'none',
+                            transition: 'all 0.3s ease'
+                        }}>
+                            <span className="icon icon-chart" />
+                            OpenTelemetry Dashboard
+                        </h1>
+                        <p style={{
+                            margin: '4px 0 0 0',
+                            fontSize: 'clamp(0.75rem, 1.5vw, 0.875rem)',
+                            color: isAuroraEnabled ? 'rgba(255, 255, 255, 0.8)' : 'var(--text-secondary)',
+                            textShadow: isAuroraEnabled ? '0 1px 2px rgba(0, 0, 0, 0.5)' : 'none',
+                            transition: 'all 0.3s ease'
+                        }}>
+                            Agentic AI System Observability
+                        </p>
+                    </div>
 
-            {/* Navigation Tabs */}
-            <div style={{
-                borderBottom: '1px solid var(--border-primary)',
-                backgroundColor: 'var(--bg-primary)',
-                padding: '0 1rem',
-                overflowX: 'auto',
-                overflowY: 'hidden'
-            }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        flex: '0 0 auto'
+                    }}>
+                        <div style={{
+                            fontSize: 'clamp(0.75rem, 1.5vw, 0.875rem)',
+                            color: 'var(--text-secondary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                        }}>
+                            <span className="icon icon-time" />
+                            <span style={{ position: 'absolute', width: '1px', height: '1px', margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)' }}>Last updated:</span>
+                            {new Date().toLocaleTimeString()}
+                        </div>
+
+                        {/* Theme toggle button */}
+                        <button
+                            onClick={toggleTheme}
+                            className="btn-rounded"
+                            style={{
+                                background: 'none',
+                                border: '1px solid var(--border-primary)',
+                                padding: '8px',
+                                cursor: 'pointer',
+                                borderRadius: '6px',
+                                color: 'var(--text-secondary)',
+                                transition: 'all 0.2s ease',
+                                fontSize: '1rem',
+                                minWidth: '36px',
+                                height: '36px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                            title={`Current theme: ${theme}. Click to cycle through light/dark/animated modes.`}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                                e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                                e.currentTarget.style.borderColor = 'var(--border-primary)';
+                            }}
+                        >
+                            <span className={`icon ${getThemeIcon()}`} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Navigation Tabs */}
                 <div style={{
+                    borderBottom: isAuroraEnabled ? 'none' : '1px solid var(--border-primary)',
+                    backgroundColor: isAuroraEnabled ? 'transparent' : 'var(--bg-primary)',
+                    padding: isAuroraEnabled ? '20px 1rem' : '0 1rem',
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
                     display: 'flex',
-                    alignItems: 'center',
-                    gap: 'clamp(0.25rem, 1vw, 0.5rem)',
-                    minWidth: 'max-content'
+                    justifyContent: isAuroraEnabled ? 'center' : 'flex-start',
+                    transition: 'all 0.3s ease'
                 }}>
-                    {tabs.map((tab) => {
-                        const isActive = activeTab === tab.key;
-                        return (
-                            <button
-                                key={tab.key}
-                                onClick={() => setActiveTab(tab.key)}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    padding: 'clamp(0.75rem, 2vw, 1rem) clamp(0.75rem, 3vw, 1.25rem)',
-                                    cursor: 'pointer',
-                                    fontSize: 'clamp(0.75rem, 1.5vw, 0.875rem)',
-                                    fontWeight: isActive ? '600' : '500',
-                                    color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                                    borderBottom: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
-                                    transition: 'all 0.3s ease',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 'clamp(0.25rem, 1vw, 0.5rem)',
-                                    whiteSpace: 'nowrap',
-                                    position: 'relative'
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (!isActive) {
-                                        e.currentTarget.style.color = 'var(--text-primary)';
-                                    }
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (!isActive) {
-                                        e.currentTarget.style.color = 'var(--text-secondary)';
-                                    }
-                                }}
-                            >
-                                <span className={`icon ${tab.icon}`} />
-                                <span>{tab.label}</span>
-                                {tab.count !== undefined && (
-                                    <span style={{
-                                        backgroundColor: isActive ? 'var(--accent-primary)' : 'var(--text-tertiary)',
-                                        color: 'white',
-                                        fontSize: 'clamp(0.625rem, 1.25vw, 0.75rem)',
-                                        padding: 'clamp(1px, 0.5vw, 2px) clamp(4px, 1vw, 6px)',
-                                        borderRadius: 'clamp(8px, 2vw, 10px)',
-                                        minWidth: 'clamp(16px, 4vw, 20px)',
-                                        textAlign: 'center',
-                                        lineHeight: '1.2',
-                                        transition: 'all 0.3s ease'
-                                    }}>
-                                        {formatTabCount(tab.count)}
-                                    </span>
-                                )}
-                            </button>
-                        );
-                    })}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: isAuroraEnabled ? '8px' : 'clamp(0.25rem, 1vw, 0.5rem)',
+                        minWidth: isAuroraEnabled ? 'auto' : 'max-content',
+                        backgroundColor: isAuroraEnabled ? 'rgba(0, 0, 0, 0.6)' : 'transparent',
+                        backdropFilter: isAuroraEnabled ? 'blur(20px)' : 'none',
+                        borderRadius: isAuroraEnabled ? '20px' : '0',
+                        padding: isAuroraEnabled ? '12px 16px' : '0',
+                        border: isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
+                        transition: 'all 0.3s ease',
+                        margin: isAuroraEnabled ? '0 16px' : '0'
+                    }}>
+                        {tabs.map((tab) => {
+                            const isActive = activeTab === tab.key;
+                            return (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setActiveTab(tab.key)}
+                                    style={{
+                                        background: isAuroraEnabled && isActive ? 'rgba(255, 255, 255, 0.2)' : 'none',
+                                        border: 'none',
+                                        padding: isAuroraEnabled ? '8px 16px' : 'clamp(0.75rem, 2vw, 1rem) clamp(0.75rem, 3vw, 1.25rem)',
+                                        cursor: 'pointer',
+                                        fontSize: 'clamp(0.75rem, 1.5vw, 0.875rem)',
+                                        fontWeight: isActive ? '600' : '500',
+                                        color: isAuroraEnabled ? '#ffffff' : (isActive ? 'var(--accent-primary)' : 'var(--text-secondary)'),
+                                        borderBottom: isAuroraEnabled ? 'none' : (isActive ? '3px solid var(--accent-primary)' : '3px solid transparent'),
+                                        borderRadius: isAuroraEnabled ? '12px' : '0',
+                                        transition: 'all 0.3s ease',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 'clamp(0.25rem, 1vw, 0.5rem)',
+                                        whiteSpace: 'nowrap',
+                                        position: 'relative',
+                                        backdropFilter: isAuroraEnabled && isActive ? 'blur(10px)' : 'none'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (!isActive) {
+                                            if (isAuroraEnabled) {
+                                                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                            } else {
+                                                e.currentTarget.style.color = 'var(--text-primary)';
+                                            }
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (!isActive) {
+                                            if (isAuroraEnabled) {
+                                                e.currentTarget.style.backgroundColor = 'transparent';
+                                                e.currentTarget.style.transform = 'none';
+                                            } else {
+                                                e.currentTarget.style.color = 'var(--text-secondary)';
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <span className={`icon ${tab.icon}`} />
+                                    <span>{tab.label}</span>
+                                    {tab.count !== undefined && (
+                                        <span style={{
+                                            backgroundColor: isActive ? 'var(--accent-primary)' : 'var(--text-tertiary)',
+                                            color: 'white',
+                                            fontSize: 'clamp(0.625rem, 1.25vw, 0.75rem)',
+                                            padding: 'clamp(1px, 0.5vw, 2px) clamp(4px, 1vw, 6px)',
+                                            borderRadius: 'clamp(8px, 2vw, 10px)',
+                                            minWidth: 'clamp(16px, 4vw, 20px)',
+                                            textAlign: 'center',
+                                            lineHeight: '1.2',
+                                            transition: 'all 0.3s ease'
+                                        }}>
+                                            {formatTabCount(tab.count)}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
 
-            {/* Main Content */}
-            <div style={{
-                flex: 1,
-                overflow: 'hidden',
-                backgroundColor: 'var(--bg-secondary)',
-                transition: 'background-color 0.3s ease',
-                display: 'flex',
-                flexDirection: 'column'
-            }}>
+                {/* Main Content */}
                 <div style={{
                     flex: 1,
-                    overflow: 'auto',
-                    padding: 'clamp(1rem, 3vw, 2rem)',
-                    animation: 'fadeIn 0.3s ease-out'
+                    overflow: 'hidden',
+                    backgroundColor: isAuroraEnabled ? 'transparent' : 'var(--bg-secondary)',
+                    transition: 'background-color 0.3s ease',
+                    display: 'flex',
+                    flexDirection: 'column'
                 }}>
-                    {renderTabContent()}
+                    <div style={{
+                        flex: 1,
+                        overflow: 'auto',
+                        padding: isAuroraEnabled ? '24px 24px 48px 24px' : 'clamp(1rem, 3vw, 2rem) clamp(1rem, 3vw, 2rem) 3rem clamp(1rem, 3vw, 2rem)',
+                        animation: 'fadeIn 0.3s ease-out'
+                    }}>
+                        {renderTabContent()}
+                    </div>
                 </div>
-            </div>
 
-            {/* CSS Keyframes and responsive styles */}
-            <style>{`
+                {/* CSS Keyframes and responsive styles */}
+                <style>{`
                 @keyframes spin {
                   0% { transform: rotate(0deg); }
                   100% { transform: rotate(360deg); }
@@ -437,6 +552,7 @@ export default function ModernDashboard() {
                   }
                 }
       `}</style>
+            </div>
         </div>
     );
 }

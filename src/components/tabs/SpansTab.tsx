@@ -8,6 +8,7 @@ interface SpansTabProps {
     readonly totalSpans: number;
     readonly selectedSpan?: Span | null;
     readonly onSpanSelect: (span: Span) => void;
+    readonly isAuroraEnabled?: boolean;
     readonly onSpanDeselect: () => void;
 }
 
@@ -28,7 +29,8 @@ export default function SpansTab({
     totalSpans,
     selectedSpan,
     onSpanSelect,
-    onSpanDeselect
+    onSpanDeselect,
+    isAuroraEnabled = false
 }: SpansTabProps) {
     const [filterStatus, setFilterStatus] = useState<'all' | 'success' | 'failed'>('all');
     const [filterAgent, setFilterAgent] = useState<string>('all');
@@ -116,13 +118,14 @@ export default function SpansTab({
                     onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
                         padding: '8px 12px',
-                        border: '1px solid var(--border-secondary)',
+                        border: isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid var(--border-secondary)',
                         borderRadius: '6px',
                         fontSize: '14px',
                         minWidth: '200px',
                         outline: 'none',
-                        backgroundColor: 'var(--bg-primary)',
-                        color: 'var(--text-primary)'
+                        backgroundColor: isAuroraEnabled ? 'rgba(0, 0, 0, 0.4)' : 'var(--bg-primary)',
+                        color: isAuroraEnabled ? '#ffffff' : 'var(--text-primary)',
+                        backdropFilter: isAuroraEnabled ? 'blur(12px)' : 'none'
                     }}
                 />
 
@@ -134,13 +137,18 @@ export default function SpansTab({
                             onClick={() => setFilterStatus(status as any)}
                             style={{
                                 padding: '6px 12px',
-                                border: filterStatus === status ? '1px solid var(--accent-primary)' : '1px solid var(--border-secondary)',
-                                backgroundColor: filterStatus === status ? 'var(--accent-primary)' : 'var(--bg-primary)',
-                                color: filterStatus === status ? 'white' : 'var(--text-primary)',
+                                border: filterStatus === status ?
+                                    (isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.4)' : '1px solid var(--accent-primary)') :
+                                    (isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid var(--border-secondary)'),
+                                backgroundColor: filterStatus === status ?
+                                    (isAuroraEnabled ? 'rgba(255, 255, 255, 0.2)' : 'var(--accent-primary)') :
+                                    (isAuroraEnabled ? 'rgba(0, 0, 0, 0.4)' : 'var(--bg-primary)'),
+                                color: isAuroraEnabled ? '#ffffff' : (filterStatus === status ? 'white' : 'var(--text-primary)'),
                                 borderRadius: '6px',
                                 fontSize: '12px',
                                 cursor: 'pointer',
-                                textTransform: 'capitalize'
+                                textTransform: 'capitalize',
+                                backdropFilter: isAuroraEnabled ? 'blur(12px)' : 'none'
                             }}
                         >
                             {status}
@@ -154,10 +162,13 @@ export default function SpansTab({
                     onChange={(e) => setFilterAgent(e.target.value)}
                     style={{
                         padding: '8px 12px',
-                        border: '1px solid var(--border-secondary)',
+                        border: isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid var(--border-secondary)',
                         borderRadius: '6px',
                         fontSize: '14px',
-                        outline: 'none'
+                        outline: 'none',
+                        backgroundColor: isAuroraEnabled ? 'rgba(0, 0, 0, 0.4)' : 'var(--bg-primary)',
+                        color: isAuroraEnabled ? '#ffffff' : 'var(--text-primary)',
+                        backdropFilter: isAuroraEnabled ? 'blur(12px)' : 'none'
                     }}
                 >
                     <option value="all">All Agents</option>
@@ -179,6 +190,9 @@ export default function SpansTab({
                     data={filteredSpans}
                     columns={spanColumns}
                     onRowClick={onSpanSelect}
+                    isAuroraEnabled={isAuroraEnabled}
+                    selectedRowKey={selectedSpan?.spanId || null}
+                    getRowKey={(_, index) => `row-${index}`}
                 />
             </div>
 

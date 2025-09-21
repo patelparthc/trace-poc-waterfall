@@ -9,7 +9,8 @@ export default function MetricCard({
   icon,
   color = '#3b82f6',
   onClick,
-  className = ''
+  className = '',
+  isAuroraEnabled = false
 }: MetricCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -20,14 +21,14 @@ export default function MetricCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
-        backgroundColor: 'var(--bg-primary)',
-        border: '1px solid var(--border-primary)',
-        borderRadius: '8px',
+        backgroundColor: isAuroraEnabled ? 'rgba(0, 0, 0, 0.6)' : 'var(--bg-primary)',
+        backdropFilter: isAuroraEnabled ? 'blur(20px)' : 'none',
+        border: isAuroraEnabled ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid var(--border-primary)',
+        borderRadius: '16px',
         padding: '24px',
-        boxShadow: isHovered ? '0 8px 24px rgba(0,0,0,0.15)' : '0 2px 8px rgba(0,0,0,0.08)',
-        transform: isHovered ? 'translateY(-4px)' : 'none',
         transition: 'all 0.3s ease',
         cursor: onClick ? 'pointer' : 'default',
+        margin: isAuroraEnabled ? '4px' : '0',
         position: 'relative',
         overflow: 'hidden'
       }}
@@ -49,7 +50,7 @@ export default function MetricCard({
         <div style={{
           fontSize: '14px',
           fontWeight: '500',
-          color: 'var(--text-secondary)',
+          color: isAuroraEnabled ? 'rgba(255, 255, 255, 0.8)' : 'var(--text-secondary)',
           textTransform: 'uppercase',
           letterSpacing: '0.05em'
         }}>
@@ -76,9 +77,10 @@ export default function MetricCard({
       <div style={{
         fontSize: '28px',
         fontWeight: '700',
-        color: 'var(--text-primary)',
+        color: isAuroraEnabled ? '#ffffff' : 'var(--text-primary)',
         marginBottom: '8px',
-        lineHeight: 1
+        lineHeight: 1,
+        textShadow: isAuroraEnabled ? '0 2px 4px rgba(0, 0, 0, 0.5)' : 'none'
       }}>
         {value}
       </div>
@@ -101,7 +103,7 @@ export default function MetricCard({
       {description && (
         <div style={{
           fontSize: '12px',
-          color: 'var(--text-secondary)',
+          color: isAuroraEnabled ? 'rgba(255, 255, 255, 0.7)' : 'var(--text-secondary)',
           lineHeight: 1.4
         }}>
           {description}

@@ -3,6 +3,7 @@ import type { TabType } from '../../types';
 
 interface OverviewTabProps {
     readonly onNavigateToTab?: (tab: TabType) => void;
+    readonly isAuroraEnabled?: boolean;
     readonly metrics: {
         totalSpans: number;
         successfulSpans: number;
@@ -31,7 +32,7 @@ const formatNumber = (num: number): string => {
     return num.toString();
 };
 
-export default function OverviewTab({ metrics, onNavigateToTab }: OverviewTabProps) {
+export default function OverviewTab({ metrics, onNavigateToTab, isAuroraEnabled = false }: OverviewTabProps) {
     return (
         <div style={{
             height: '100%',
@@ -54,6 +55,7 @@ export default function OverviewTab({ metrics, onNavigateToTab }: OverviewTabPro
                     color="var(--success)"
                     icon="🔗"
                     onClick={() => onNavigateToTab?.('spans')}
+                    isAuroraEnabled={isAuroraEnabled}
                 />
                 <MetricCard
                     title="Success Rate"
@@ -62,6 +64,7 @@ export default function OverviewTab({ metrics, onNavigateToTab }: OverviewTabPro
                     color={parseFloat(metrics.successRate) > 90 ? "var(--success)" : "var(--warning)"}
                     icon="✅"
                     onClick={() => onNavigateToTab?.('spans')}
+                    isAuroraEnabled={isAuroraEnabled}
                 />
                 <MetricCard
                     title="Sessions"
@@ -70,6 +73,7 @@ export default function OverviewTab({ metrics, onNavigateToTab }: OverviewTabPro
                     color="var(--accent-primary)"
                     icon="👥"
                     onClick={() => onNavigateToTab?.('sessions')}
+                    isAuroraEnabled={isAuroraEnabled}
                 />
                 <MetricCard
                     title="Avg Duration"
@@ -78,6 +82,7 @@ export default function OverviewTab({ metrics, onNavigateToTab }: OverviewTabPro
                     color="var(--accent-secondary)"
                     icon="⏱️"
                     onClick={() => onNavigateToTab?.('traces')}
+                    isAuroraEnabled={isAuroraEnabled}
                 />
                 <MetricCard
                     title="LLM Calls"
@@ -86,6 +91,7 @@ export default function OverviewTab({ metrics, onNavigateToTab }: OverviewTabPro
                     color="var(--warning)"
                     icon="🤖"
                     onClick={() => onNavigateToTab?.('spans')}
+                    isAuroraEnabled={isAuroraEnabled}
                 />
                 <MetricCard
                     title="Agent Tasks"
@@ -94,6 +100,7 @@ export default function OverviewTab({ metrics, onNavigateToTab }: OverviewTabPro
                     color="var(--error)"
                     icon="⚡"
                     onClick={() => onNavigateToTab?.('spans')}
+                    isAuroraEnabled={isAuroraEnabled}
                 />
             </div>
         </div>
